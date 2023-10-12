@@ -4,6 +4,7 @@ import axios from 'axios';
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const gameTypes = require("./queues.json");
+const champions = require("./champion.json");
 
 const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
 
@@ -23,7 +24,19 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
     }
 }).then(response => {
     let gameType = gameTypes.filter(val => val.queueId === response.data.gameQueueConfigId)[0]
-    console.log(`${name} is in a game, playing ${gameType.description}`)
+
+    let summChar = response.data.participants.filter(participant => {
+        return participant.summonerName === name;
+    })[0].championId;
+
+    let champion = ""
+    for (const champ in champions.data) {
+        if (champions.data[champ].key == summChar) {
+            champion = champ;
+        }
+    }
+
+    console.log(`${name} is playing ${champion} in ${gameType.description}`)
 }).catch(error => {
     if (error.response && error.response.status === 404) {
         console.log('Not in a game')
