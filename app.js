@@ -1,5 +1,6 @@
 import { API } from '@discordjs/core';
 import { REST } from '@discordjs/rest';
+import { blockQuote } from '@discordjs/formatters';
 import axios from 'axios';
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -10,7 +11,7 @@ const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
 
 const api = new API(rest);
 
-const summInfo = (await axios.get('https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/One%20Cappuccino', {
+const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${process.env.SUMMONER_NAME}`, {
     headers: {
         "X-Riot-Token": process.env.RIOT_TOKEN
     }
@@ -36,7 +37,10 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
         }
     }
 
-    console.log(`${name} is playing ${champion} in ${gameType.description}`)
+    api.channels.createMessage(process.env.CHANNEL_ID, {
+        content: blockQuote(`## ${name} is playing ${champion} in ${gameType.description}`)
+    });
+    console.log(`## ${name} is playing ${champion} in ${gameType.description}`)
 }).catch(error => {
     if (error.response && error.response.status === 404) {
         console.log('Not in a game')

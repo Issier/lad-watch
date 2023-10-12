@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@discordjs/core": "^1.0.1",
+    "@discordjs/formatters": "^0.3.2",
     "axios": "^1.5.1",
     "node-html-parser": "^6.1.10"
   }
