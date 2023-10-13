@@ -8,6 +8,16 @@ const require = createRequire(import.meta.url);
 const gameTypes = require("./queues.json");
 const champions = require("./champion.json");
 
+const rankColors = {
+    'DIAMOND': 0xb9f2ff,
+    'EMERALD': 0x50C878,
+    'PLATINUM': 0xE5E4E2,
+    'GOLD': 0xFFD700,
+    'SILVER': 0xC0C0C0,
+    'BRONZE': 0xCD7F32,
+    'IRON': 0x964B00
+}
+
 const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
 
 const api = new API(rest);
@@ -59,7 +69,7 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
         `[op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(name)}/ingame)`
 
         const imageEmbed = new EmbedBuilder()
-            .setColor(0x0099FF)
+            .setColor(rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF)
             .setTitle("LadWatch Alert")
             .setDescription(bold(`${name} is playing ${champion} in ${gameType.description.replace(' games', '')}`))
             .setThumbnail(`http://ddragon.leagueoflegends.com/cdn/13.20.1/img/champion/${champion}.png`)
