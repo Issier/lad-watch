@@ -8,6 +8,8 @@ const require = createRequire(import.meta.url);
 const gameTypes = require("./queues.json");
 const champions = require("./champion.json");
 
+axios.defaults.headers.get['X-Riot-Token'] = process.env.RIOT_TOKEN;
+
 const rankColors = {
     'DIAMOND': 0xb9f2ff,
     'EMERALD': 0x50C878,
@@ -22,19 +24,11 @@ const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
 
 const api = new API(rest);
 
-const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${process.env.SUMMONER_NAME}`, {
-    headers: {
-        "X-Riot-Token": process.env.RIOT_TOKEN
-    }
-})).data;
+const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${process.env.SUMMONER_NAME}`)).data;
 
 const name = summInfo.name;
 
-axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`, {
-    headers: {
-        "X-Riot-Token": process.env.RIOT_TOKEN
-    }
-}).then(response => {
+axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`).then(response => {
     let gameType = gameTypes.filter(val => val.queueId === response.data.gameQueueConfigId)[0]
 
     let summChar = response.data.participants.filter(participant => {
@@ -48,11 +42,7 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
         }
     }
 
-    axios.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${summInfo.id}/by-champion/${summChar}`, {
-        headers: {
-            "X-Riot-Token": process.env.RIOT_TOKEN
-        }
-    }).then(async champMasteryResponse => {
+    axios.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${summInfo.id}/by-champion/${summChar}`).then(async champMasteryResponse => {
         let champMastery = champMasteryResponse.data.championPoints
 
         let gameTime = new Date(Date.now() - new Date(response.data.gameStartTime));
