@@ -47,11 +47,7 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
 
         let gameTime = new Date(Date.now() - new Date(response.data.gameStartTime));
 
-        let rankData = await axios.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`, {
-            headers: {
-                "X-Riot-Token": process.env.RIOT_TOKEN
-            }
-        });
+        let rankData = await axios.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`);
 
         rankData = rankData.data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]
 
