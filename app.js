@@ -21,18 +21,15 @@ const rankColors = {
 }
 
 const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
-
 const api = new API(rest);
 
 const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${process.env.SUMMONER_NAME}`)).data;
-
-const name = summInfo.name;
 
 axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`).then(response => {
     let gameType = gameTypes.filter(val => val.queueId === response.data.gameQueueConfigId)[0]
 
     let summChar = response.data.participants.filter(participant => {
-        return participant.summonerName === name;
+        return participant.summonerName === summInfo.name;
     })[0].championId;
 
     let champion = ""
@@ -51,13 +48,13 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
 
         rankData = rankData.data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]
 
-        const liveGamePages = `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(name)}/live-game) | ` +
-        `[op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(name)}/ingame)`
+        const liveGamePages = `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(summInfo.name)}/live-game) | ` +
+        `[op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(summInfo.name)}/ingame)`
 
         const imageEmbed = new EmbedBuilder()
             .setColor(rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF)
-            .setTitle("LadWatch Alert")
-            .setDescription(bold(`${name} is playing ${champion} in ${gameType.description.replace(' games', '')}`))
+            .setTitle(`LadWatch: ${summInfo.name}`)
+            .setDescription(`Playing ${bold(champion)} in ${gameType.description.replace(' games', '')}`)
             .setThumbnail(`http://ddragon.leagueoflegends.com/cdn/13.20.1/img/champion/${champion}.png`)
             .setFields(
                 {name: '\u200B', value: '\u200B'},
@@ -65,13 +62,12 @@ axios.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summon
                 {name: 'Champion Mastery', value: `${champMastery.toLocaleString()}`, inline: true},
                 {name: 'Current Solo Queue Rank', value: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`, inline: true},
                 {name : 'Live Game Pages', value: liveGamePages}
-
-            )
+            );
 
         api.channels.createMessage(process.env.CHANNEL_ID, {
             embeds: [imageEmbed]
         });
-        console.log(`## ${name} is playing ${champion} in ${gameType.description}`)
+        console.log(`## ${summInfo.name} is playing ${champion} in ${gameType.description}`)
     })
 }).catch(error => {
     if (error.response && error.response.status === 404) {
