@@ -4,11 +4,15 @@ import { bold } from '@discordjs/formatters';
 import { EmbedBuilder } from '@discordjs/builders';
 import axios from 'axios';
 import { createRequire } from "module";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { parse } from "dotenv";
 const require = createRequire(import.meta.url);
 const gameTypes = require("./queues.json");
 const champions = require("./champion.json");
+const env = parse(readFileSync(resolve(process.cwd(), ".env")));
 
-axios.defaults.headers.get['X-Riot-Token'] = process.env.RIOT_TOKEN;
+axios.defaults.headers.get['X-Riot-Token'] = env.RIOT_TOKEN;
 
 const rankColors = {
     'DIAMOND': 0xb9f2ff,
@@ -20,11 +24,11 @@ const rankColors = {
     'IRON': 0x964B00
 }
 
-const rest = new REST({ version: '10'}).setToken(process.env.DISCORD_TOKEN);
+const rest = new REST({ version: '10'}).setToken(env.DISCORD_TOKEN);
 const api = new API(rest);
 
 /* Summoner Info */
-const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${process.env.SUMMONER_NAME}`)).data;
+const summInfo = (await axios.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${env.SUMMONER_NAME}`)).data;
 
 const liveGamePages = `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(summInfo.name)}/live-game) | [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(summInfo.name)}/ingame)`;
 
@@ -65,7 +69,7 @@ try {
             {name : 'Live Game Pages', value: liveGamePages}
         );
 
-    api.channels.createMessage(process.env.CHANNEL_ID, {
+    api.channels.createMessage(env.CHANNEL_ID, {
         embeds: [imageEmbed]
     });
 } catch (error) {
