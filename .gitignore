@@ -1,3 +1,4 @@
 node_modules
 .env
 champion
+league_data
