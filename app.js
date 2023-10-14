@@ -60,7 +60,7 @@ try {
         .setColor(rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF)
         .setTitle(`LadWatch: ${summInfo.name}`)
         .setDescription(`Playing ${bold(champion)} in ${gameType.description.replace(' games', '')}`)
-        .setThumbnail(`http://ddragon.leagueoflegends.com/cdn/13.20.1/img/champion/${champion}.png`)
+        .setThumbnail(`attachment://${champion}.png`)
         .setFields(
             {name: '\u200B', value: '\u200B'},
             {name: 'Game Time', value: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`, inline: true},
@@ -69,9 +69,10 @@ try {
             {name : 'Live Game Pages', value: liveGamePages}
         );
 
-    api.channels.createMessage(env.CHANNEL_ID, {
-        embeds: [imageEmbed]
-    });
+        api.channels.createMessage(env.CHANNEL_ID, {
+            embeds: [imageEmbed],
+            files: [{contentType: 'image/png', data: readFileSync(resolve(process.cwd(), "champion", `${champion}.png`)), name: `${champion}.png`}]
+        });
 } catch (error) {
     if (error.response && error.response.status === 404) {
         console.log('Not in a game')
