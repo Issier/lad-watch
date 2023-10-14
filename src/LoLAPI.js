@@ -9,7 +9,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
         'EMERALD': 0x50C878,
-        'PLATINUM': 0xE5E4E2,
+        'PLATINUM': 0x0AC8B9,
         'GOLD': 0xFFD700,
         'SILVER': 0xC0C0C0,
         'BRONZE': 0xCD7F32,
