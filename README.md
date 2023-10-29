@@ -11,9 +11,9 @@ The project is currently configured to require gcloud access as the champion ima
 
 ### Setup and Run
 Make sure you are setup locally with your gcloud credentials in Application Default Credentials:
-`gcloud auth application-default login`
+- `gcloud auth application-default login`
 It's also recommended (especially if you plan to deploy this project to gcloud) to set up these credentials to impersonate the service account that will be used to serve the application:
-`gcloud auth application-default login --impersonate-service-acount={service account}`
+- `gcloud auth application-default login --impersonate-service-acount={service account}`
 
 See the [Google Cloud docs](https://cloud.google.com/docs/authentication/provide-credentials-adc) for more info
 
