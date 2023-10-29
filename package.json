@@ -1,12 +1,13 @@
 {
-  "name": "disc-bot",
+  "name": "lad-watch",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "source ./.env && node app.js"
+    "start": "node app.js",
+    "start-dev": "NODE_ENV=development node app.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +15,9 @@
     "@discordjs/builders": "^1.6.5",
     "@discordjs/core": "^1.0.1",
     "@discordjs/formatters": "^0.3.2",
+    "@google-cloud/functions-framework": "^3.3.0",
+    "@google-cloud/secret-manager": "^5.0.1",
+    "@google-cloud/storage": "^7.4.0",
     "axios": "^1.5.1",
     "dotenv": "^16.3.1",
     "node-html-parser": "^6.1.10"
