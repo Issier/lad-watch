@@ -9,6 +9,8 @@ Lad watch requires three secrets:
 
 The project is currently configured to require gcloud access as the champion images are stored in a private GCloud bucket.
 
+LadWatch assumes a gcloud project named `lad-alert` with the above secret names.
+
 ### Setup and Run
 Make sure you are setup locally with your gcloud credentials in Application Default Credentials:
 - `gcloud auth application-default login`
