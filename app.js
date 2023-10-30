@@ -20,7 +20,7 @@ export async function leagueLadCheck() {
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);
-        if (!!gameData && !(lads[lad].has(gameData.gameId))) {
+        if (!!gameData && gameData.gameType === "5v5 Ranked Solo" && !(lads[lad].has(gameData.gameId))) {
             toSend.push(gameData);
             lads[lad].add(gameData.gameId)
         }
