@@ -4,7 +4,7 @@ A NodeJS application to check a list of Summoner names from League of Legends an
 ## Setup
 Lad watch requires three secrets:
 - RIOT_TOKEN: A Riot Games API key
-- DISCORD_TOKEN: A Discord API token
+- DISCORD_TOKEN: A Discord API token configured for the bot
 - CHANNEL_ID: The name of the Discord channel where the alert should be posted
 
 The project is currently configured to require gcloud access as the champion images are stored in a private GCloud bucket.
