@@ -4,6 +4,7 @@ import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { createRequire } from "module";
 import { resolve } from "node:path";
 import express from 'express';
+import { downloadAsJson } from "./src/utilities.js";
 const require = createRequire(import.meta.url);
 const lads = require(resolve(process.cwd(), "league_data", "lads.json"));
 const isDev = process.env.NODE_ENV === 'development';
@@ -17,7 +18,8 @@ export async function leagueLadCheck() {
     const riotAPI = isDev ? process.env.RIOT_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' }));
     const discAPI = isDev ? process.env.DISCORD_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' }));
     const channelID = isDev ? process.env.CHANNEL_ID : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest'}));
-
+    const lads = isDev ? require(resolve(process.cwd(), "league_data", "lads.json")) : await downloadAsJson('league_data', 'lads.json');
+    
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);

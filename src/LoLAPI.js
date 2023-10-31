@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { createRequire } from "module";
 import { resolve } from "node:path";
+import { downloadAsJson } from './utilities.js';
 const require = createRequire(import.meta.url);
-const gameTypes = require(resolve(process.cwd(), "league_data", "queues.json"));
-const champions = require(resolve(process.cwd(), "league_data", "champion.json"));
 
 export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
     const rankColors = {
@@ -15,6 +14,9 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
         'BRONZE': 0xCD7F32,
         'IRON': 0x964B00
     }
+
+    const gameTypes = await downloadAsJson('league_data', 'queues.json')
+    const champions = await downloadAsJson('league_data', 'champion.json')
 
     const axiosInstance = axios.create({
         headers: {
