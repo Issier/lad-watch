@@ -22,7 +22,7 @@ export async function leagueLadCheck() {
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);
-        if (!!gameData && gameData.gameType === '5v5 Ranked Solo') {
+        if (!!gameData) {
             toSend.push(gameData);
         }
     }
