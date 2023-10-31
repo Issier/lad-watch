@@ -3,6 +3,7 @@ import fetchLeagueLadGameData from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { createRequire } from "module";
 import { resolve } from "node:path";
+import express from 'express';
 const require = createRequire(import.meta.url);
 const lads = require(resolve(process.cwd(), "league_data", "lads.json"));
 const isDev = process.env.NODE_ENV === 'development';
@@ -20,12 +21,36 @@ export async function leagueLadCheck() {
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);
-        if (!!gameData && gameData.gameType === "5v5 Ranked Solo" && !(lads[lad].has(gameData.gameId))) {
+        if (!!gameData) {
             toSend.push(gameData);
-            lads[lad].add(gameData.gameId)
         }
     }
     sendLeagueLadAlerts(toSend, channelID, discAPI);
+    return toSend;
 }             
 
-leagueLadCheck();
+const app = express();
+app.use(express.json())
+
+const port = parseInt(process.env.PORT) || 8080;
+app.listen(port, () => {
+    console.log('LadWatch listening')
+})
+
+app.post('/', async (req, res) => {
+    if (!req.body) {
+      const msg = 'no Pub/Sub message received';
+      console.error(`error: ${msg}`);
+      res.status(400).send(`Bad Request: ${msg}`);
+      return;
+    }
+    if (!req.body.message) {
+      const msg = 'invalid Pub/Sub message format';
+      console.error(`error: ${msg}`);
+      res.status(400).send(`Bad Request: ${msg}`);
+      return;
+    }
+    
+    const ladsAlerted = await leagueLadCheck();
+    res.status(204).send(ladsAlerted.map(l => l.summonerName));
+  });

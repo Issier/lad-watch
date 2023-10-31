@@ -2,7 +2,7 @@ FROM node:20-bookworm-slim
 
 WORKDIR /DiscBot/
 
-COPY package.json /DiscBot/
+COPY package*.json /DiscBot/
 RUN npm install
 
 COPY app.js /DiscBot/

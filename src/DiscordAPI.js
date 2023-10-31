@@ -21,7 +21,10 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
                 {name: 'Current Solo Queue Rank', value: gameData.summonerRank, inline: true},
                 {name : 'Live Game Pages', value: gameData.liveGamePages}
             ));
-
+        
+        if (process.env.NODE_ENV === 'development') {
+            images.push({contentType: 'image/png', data: champImage[0], name: `${gameData.champion}.png`})
+        }
         const champImage = await storage
              .bucket('lad-alert-champions')
              .file(`champion/${gameData.champion}.png`)
