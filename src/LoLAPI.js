@@ -24,13 +24,12 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
         }
     })
 
-    /* Summoner Info */
-    const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${ladName}`)).data;
-
-    /* Summoner Ranked Data */
-    const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
-
     try {
+        /* Summoner Info */
+        const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${ladName}`)).data;
+
+        /* Summoner Ranked Data */
+        const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
         /* Live Game Data */
         let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`)).data;
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
@@ -68,6 +67,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
         }
         
     } catch (error) {
+        console.log("Failed to fetch league data")
         return undefined;
     }
 }
