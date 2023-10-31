@@ -1,6 +1,8 @@
 # lad-watch
 A NodeJS application to check a list of Summoner names from League of Legends and post to an indicated Discord channel if the user is currently in a game.
 
+Details include summoner rank, champion being played, champion mastery, queue type and links to relevant u.gg and op.gg pages
+
 ## Setup
 Lad watch requires three secrets:
 - RIOT_TOKEN: A Riot Games API key
