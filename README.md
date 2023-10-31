@@ -23,20 +23,20 @@ It's also recommended to set up these credentials to impersonate the service acc
 See the [Google Cloud docs](https://cloud.google.com/docs/authentication/provide-credentials-adc) for more info
 
 After gcloud credentials are ready, the project can be built as a docker container:
-`docker build -t {tag_name} .`
+- `docker build -t {image_name} .`
 
 And then run the above docker container. 
 
 The [Google Cloud Code VS Code Extension](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode) can be used to run this as a local container, using your ADC configured above (and optionally passing a service account as the agent)
 
 To run locally with just gcloud credentials:
-`npm install`
-`npm start`
+- `npm install`
+- `npm start`
 
 Once that is all up and running, LadWatch is currently configured to be triggered by a post request (like what would be expected by a Pub/Sub event in Google Cloud).
 
 A curl command to test against the code is:
-`curl -H 'content-type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" -X POST --data $'{  "message": [{"data": "abcd"}]}' localhost:{PORT}`
+- `curl -H 'content-type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" -X POST --data $'{  "message": [{"data": "abcd"}]}' localhost:{PORT}`
 
 With PORT likely being 8080 if you're running as is, typically 8081 by default if using Google CLoud Code extension or this can be set when running the docker image.
 
