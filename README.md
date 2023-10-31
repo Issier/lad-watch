@@ -30,6 +30,6 @@ After gcloud credentials are ready, you can run against gcloud with:
 - `npm start`
     - Note: There is also a `npm start-dev` option that will use local evironment variables for your secrets. This is WIP at the moment as several resources that are required for LadWatch are currently configured in code to rely on google cloud services. 
 
-## Sample Discord Output
+### Sample Discord Output
 ![image](https://github.com/Issier/lad-watch/assets/23412323/19eb00a7-9e02-4479-b4a2-6d913e274a73)
 
