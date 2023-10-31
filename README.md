@@ -21,8 +21,6 @@ It's also recommended to set up these credentials to impersonate the service acc
 
 See the [Google Cloud docs](https://cloud.google.com/docs/authentication/provide-credentials-adc) for more info
 
----
-
 After gcloud credentials are ready, you can run against gcloud with: 
 - `git clone git@github.com:Issier/lad-watch.git`
 - `cd ./lad-watch`
