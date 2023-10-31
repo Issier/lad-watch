@@ -52,5 +52,5 @@ app.post('/', async (req, res) => {
     }
     
     const ladsAlerted = await leagueLadCheck();
-    res.status(204).send(ladsAlerted.map(l => l.summonerName));
+    res.status(204).send('Found Lads');
   });
