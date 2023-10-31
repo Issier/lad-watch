@@ -6,7 +6,6 @@ import { resolve } from "node:path";
 import express from 'express';
 import { downloadAsJson } from "./src/utilities.js";
 const require = createRequire(import.meta.url);
-const lads = require(resolve(process.cwd(), "league_data", "lads.json"));
 const isDev = process.env.NODE_ENV === 'development';
 
 function getSecretVal(secret) {
