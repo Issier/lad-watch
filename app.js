@@ -1,6 +1,7 @@
 import { sendLeagueLadAlerts } from "./src/DiscordAPI.js";
 import fetchLeagueLadGameData from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { Firestore } from "@google-cloud/firestore";
 import { createRequire } from "module";
 import { resolve } from "node:path";
 import express from 'express';
@@ -14,6 +15,9 @@ function getSecretVal(secret) {
 
 export async function leagueLadCheck() {
     const client = new SecretManagerServiceClient();
+    const db = new Firestore({
+        projectId: 'lad-alert'
+    })
     const riotAPI = isDev ? process.env.RIOT_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' }));
     const discAPI = isDev ? process.env.DISCORD_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' }));
     const channelID = isDev ? process.env.CHANNEL_ID : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest'}));
@@ -22,8 +26,17 @@ export async function leagueLadCheck() {
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);
+        const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
         if (!!gameData) {
-            toSend.push(gameData);
+            const ladDoc = await ladDocRef.get();
+            if (!ladDoc.exists) {
+                toSend.push(gameData);
+                await ladDocRef.set({
+                    gameId: gameData.gameId,
+                    champion: gameData.champion,
+                    gameType: gameData.gameType
+                })
+            }
         }
     }
     sendLeagueLadAlerts(toSend, channelID, discAPI);

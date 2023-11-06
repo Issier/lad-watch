@@ -54,6 +54,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
             gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
             champion: champion, 
             championMastery: `${champMastery.toLocaleString()}`,
+            summonerId: summInfo.id,
             summonerName: summInfo.name,
             summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
             liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(summInfo.name)}/live-game)` +  

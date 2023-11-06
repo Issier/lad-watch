@@ -15,6 +15,7 @@
     "@discordjs/builders": "^1.6.5",
     "@discordjs/core": "^1.0.1",
     "@discordjs/formatters": "^0.3.2",
+    "@google-cloud/firestore": "^7.1.0",
     "@google-cloud/functions-framework": "^3.3.0",
     "@google-cloud/secret-manager": "^5.0.1",
     "@google-cloud/storage": "^7.4.0",
