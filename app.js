@@ -26,8 +26,8 @@ export async function leagueLadCheck() {
     let toSend = [];
     for (const lad of lads) {
         const gameData = await fetchLeagueLadGameData(lad, riotAPI);
-        const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
         if (!!gameData) {
+            const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
             const ladDoc = await ladDocRef.get();
             if (!ladDoc.exists) {
                 toSend.push(gameData);
