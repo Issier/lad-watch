@@ -1,4 +1,6 @@
 import winston from 'winston';
+import { LoggingWinston } from '@google-cloud/logging-winston';
+
 
 export const logger = winston.createLogger({
   level: 'info',
@@ -7,6 +9,7 @@ export const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
         format: winston.format.simple(),
-    })
+    }),
+    new LoggingWinston()
   ],
 });
