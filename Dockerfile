@@ -6,6 +6,7 @@ COPY package*.json /DiscBot/
 RUN npm install
 
 COPY app.js /DiscBot/
+COPY logger.js /DiscBot/
 COPY src/ /DiscBot/src
 
 EXPOSE 8080
