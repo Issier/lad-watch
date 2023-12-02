@@ -5,7 +5,7 @@ import { Firestore } from "@google-cloud/firestore";
 import { createRequire } from "module";
 import { resolve } from "node:path";
 import express from 'express';
-import logger from './logger.js';
+import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
