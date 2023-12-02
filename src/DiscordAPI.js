@@ -3,6 +3,7 @@ import { REST } from '@discordjs/rest';
 import { bold } from '@discordjs/formatters';
 import { EmbedBuilder } from '@discordjs/builders';
 import { Storage } from "@google-cloud/storage";
+import { logger } from '../logger';
 
 export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) {
     const storage = new Storage();
@@ -38,6 +39,16 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
         discordAPI.channels.createMessage(channelID, {
             embeds: embeds,
             files: images
+        }).then(value => {
+            logger.log({
+                level: 'info',
+                message: `Created discord message for ${gameData.summonerName}`
+            })
+        }).catch(error => {
+            logger.log({
+                level: 'error',
+                message: `Failed to send discord message for ${gameData.summonerName}`
+            })
         });
     }
 }

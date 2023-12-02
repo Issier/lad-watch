@@ -5,6 +5,7 @@ import { Firestore } from "@google-cloud/firestore";
 import { createRequire } from "module";
 import { resolve } from "node:path";
 import express from 'express';
+import logger from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
@@ -48,19 +49,20 @@ app.use(express.json())
 
 const port = parseInt(process.env.PORT) || 8080;
 app.listen(port, () => {
-    console.log('LadWatch listening')
+    logger.log({
+        level: 'info',
+        message: 'LadWatch listening'
+    })
 })
 
 app.post('/', async (req, res) => {
     if (!req.body) {
       const msg = 'no Pub/Sub message received';
-      console.error(`error: ${msg}`);
       res.status(400).send(`Bad Request: ${msg}`);
       return;
     }
     if (!req.body.message) {
       const msg = 'invalid Pub/Sub message format';
-      console.error(`error: ${msg}`);
       res.status(400).send(`Bad Request: ${msg}`);
       return;
     }
