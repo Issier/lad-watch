@@ -3,7 +3,7 @@ import { REST } from '@discordjs/rest';
 import { bold } from '@discordjs/formatters';
 import { EmbedBuilder } from '@discordjs/builders';
 import { Storage } from "@google-cloud/storage";
-import { logger } from '../logger';
+import { logger } from '../logger.js';
 
 export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) {
     const storage = new Storage();
