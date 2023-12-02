@@ -2,6 +2,7 @@ import axios from 'axios';
 import { createRequire } from "module";
 import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
+import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
 
 export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
@@ -68,7 +69,17 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
         }
         
     } catch (error) {
-        console.log("Failed to fetch league data")
+        if (error.response.status === 404) {
+            logger.log({
+                level: 'info',
+                message: `Summoner ${summInfo.name} is not in a game`
+            })
+        } else if (error.response.status < 500) {
+            logger.log({
+                level: 'error',
+                message: 'Failed to fetch league lad data'
+            })
+        }
         return undefined;
     }
 }
