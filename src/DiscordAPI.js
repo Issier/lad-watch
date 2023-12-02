@@ -19,7 +19,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
                 {name: '\u200B', value: '\u200B'},
                 {name: 'Champion Mastery', value: gameData.championMastery, inline: true},
                 {name: 'Current Solo Queue Rank', value: gameData.summonerRank, inline: true},
-                {name: 'Game Time', value: gameData.gameTime, inline: true},
+                {name: 'Game Time', value: gameData.gameTime, inline: true},    
                 {name : 'Live Game Pages', value: gameData.liveGamePages}
             ));
         
@@ -32,7 +32,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
              .download()
         images.push({contentType: 'image/png', data: champImage[0], name: `${gameData.champion}.png`})
     }
-    const rest = new REST({ version: '10'}).setToken(discordToken);
+    const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
     const discordAPI = new API(rest);
     if (embeds.length > 0) {
         discordAPI.channels.createMessage(channelID, {
