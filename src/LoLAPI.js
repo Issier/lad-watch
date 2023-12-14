@@ -34,7 +34,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
         /* Live Game Data */
         try {
             let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`)).data;
-            logger.info(liveGame)
+            logger.info(JSON.stringify(liveGame))
             const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
             const summChar = liveGame.participants.filter(participant => {
@@ -52,7 +52,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
 
             /* Live Game Champion Mastery for Summoner */
             const champMastery = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${summInfo.id}/by-champion/${summChar}`)).data.championPoints;
-            logger.info(champMastery)
+            logger.info(JSON.stringify(champMastery))
 
             return {
                 gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
