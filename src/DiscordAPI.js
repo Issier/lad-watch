@@ -9,7 +9,8 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
     const storage = new Storage();
 
     let embeds = [];
-    let images = []
+    let images = [];
+    let summoners = [];
     for (const gameData of dataEntries) {
         embeds.push(new EmbedBuilder()
             .setColor(gameData.rankColorHex)
@@ -32,6 +33,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
              .file(`champion/${gameData.champion}.png`)
              .download()
         images.push({contentType: 'image/png', data: champImage[0], name: `${gameData.champion}.png`})
+        summoners.push(gameData.summonerName);
     }
     const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
     const discordAPI = new API(rest);
@@ -42,12 +44,12 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
         }).then(value => {
             logger.log({
                 level: 'info',
-                message: `Created discord message for ${gameData.summonerName}`
+                message: `Created discord message for ${summoners.join(',')}`
             })
         }).catch(error => {
             logger.log({
                 level: 'error',
-                message: `Failed to send discord message for ${gameData.summonerName}`
+                message: `Failed to send discord message for ${summoners.join(',')}`
             })
         });
     }
