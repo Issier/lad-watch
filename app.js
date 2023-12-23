@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import express from 'express';
 import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
+import dayjs from "dayjs";
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -40,6 +41,33 @@ export async function leagueLadCheck() {
             }
         }
     }
+    if (dayjs().isAfter(dayjs('2023-12-25').hour(0).minute(59)) && dayjs().isBefore(dayjs('2023-12-25').hour(1).minute(10).second(0))) {
+        const santaRef = db.collection('lads').doc('santa').collection('games').doc('christmas2023')
+        const santa = await santaRef.get();
+        if (!santa.exists) { // 🙏
+            toSend.push({
+                gameTime: `Midnight`,
+                champion: 'Santa', 
+                championMastery: `1,752`,
+                summonerId: 'santa',
+                summonerName: 'Kris Kringle',
+                summonerRank: `Tinsel IV 0LP (Hard Stuck)`,
+                liveGamePages: `[u.gg](https://www.noradsanta.org/en/)`,
+                gameType: 'a Sleigh',
+                rankColorHex: 0xC30F16,
+                gameId: 'christmas2023',
+                hotStreak: false,
+                seasonWins: 1,
+                seasonLosses: 364
+            });
+            await santaRef.set({
+                gameId: 'christmas2023',
+                champion: 'Santa',
+                gameType: 'Christmas'
+            })
+        }
+    }
+
     sendLeagueLadAlerts(toSend, channelID, discAPI);
     return toSend;
 }             
