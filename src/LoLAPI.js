@@ -1,11 +1,10 @@
 import axios from 'axios';
 import { createRequire } from "module";
-import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
 
-export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
+export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
         'EMERALD': 0x50C878,
@@ -26,18 +25,19 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
     })
 
     try {
+        const riotInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data;
         /* Summoner Info */
-        const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${ladName}`)).data;
+        const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data;
 
         /* Summoner Ranked Data */
         const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
         /* Live Game Data */
         try {
-            let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summInfo.id}`)).data;
+            let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${riotInfo.puuid}`)).data;
             const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
             const summChar = liveGame.participants.filter(participant => {
-                return participant.summonerName === summInfo.name;
+                return participant.puuid === riotInfo.puuid;
             })[0].championId;
 
             let champion = ""
@@ -50,14 +50,14 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
             const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime));
 
             /* Live Game Champion Mastery for Summoner */
-            const champMastery = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${summInfo.puuid}/by-champion/${summChar}`)).data.championPoints;
+            const champMastery = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${riotInfo.puuid}/by-champion/${summChar}`)).data.championPoints;
 
             return {
                 gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
                 champion: champion, 
                 championMastery: `${champMastery.toLocaleString()}`,
                 summonerId: summInfo.id,
-                summonerName: summInfo.name,
+                summonerName: riotInfo.name,
                 summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
                 liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(summInfo.name)}/live-game)` +  
                             `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(summInfo.name)}/ingame)`,
@@ -72,7 +72,7 @@ export default async function fetchLeagueLadGameData(ladName, riotAPIToken) {
             if (error.response.status === 404) {
                 logger.log({
                     level: 'info',
-                    message: `Summoner ${summInfo.name} is not in a game`
+                    message: `Summoner ${riotInfo.gameName} is not in a game`
                 })
             }
         }
