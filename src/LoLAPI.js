@@ -59,8 +59,8 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                 summonerId: summInfo.id,
                 summonerName: riotInfo.gameName,
                 summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
-                liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(summInfo.name)}/live-game)` +  
-                            `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(summInfo.name)}/ingame)`,
+                liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +  
+                            `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
                 gameType: gameType.description.replace(' games', ''),
                 rankColorHex: rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
                 gameId: liveGame.gameId,
