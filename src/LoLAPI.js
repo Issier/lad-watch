@@ -26,11 +26,24 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
 
     try {
         const riotInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data;
+        logger.log({
+            level: 'info',
+            message: `Fetched league lad data for ${ladName}#${ladTag}`
+        })
+
         /* Summoner Info */
         const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data;
+        logger.log({
+            level: 'info',
+            message: `Fetched summoner info for ${riotInfo.gameName}`
+        })
 
         /* Summoner Ranked Data */
         const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
+        logger.log({
+            level: 'info',
+            message: `Fetched ranked data for ${riotInfo.gameName}`
+        })
         /* Live Game Data */
         try {
             let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${riotInfo.puuid}`)).data;
