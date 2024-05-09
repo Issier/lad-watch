@@ -25,7 +25,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
     })
 
     try {
-        const riotInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data;
+        const riotInfo = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data;
         logger.log({
             level: 'info',
             message: `Fetched league lad data for ${ladName}#${ladTag}`
