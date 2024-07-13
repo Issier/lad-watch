@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { createRequire } from "module";
+import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
+const isDev = process.env.NODE_ENV === 'development';
 
 export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const rankColors = {
@@ -15,8 +17,9 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         'IRON': 0x964B00
     }
 
-    const gameTypes = await downloadAsJson('league_data', 'queues.json')
-    const champions = await downloadAsJson('league_data', 'champion.json')
+    require(resolve(process.cwd(), "league_data", "lads.json"))
+    const gameTypes = isDev ? require(resolve(process.cwd(), "league_data", "queues.json")) : await downloadAsJson('league_data', 'queues.json')
+    const champions = isDev ? require(resolve(process.cwd(), "league_data", "champion.json")) : await downloadAsJson('league_data', 'champion.json')
 
     const axiosInstance = axios.create({
         headers: {
@@ -75,6 +78,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                     message: `Summoner ${riotInfo.gameName} is not in a game`
                 })
             }
+            return null;
         }
     } catch (error) {
         if (error.response.status < 500) {

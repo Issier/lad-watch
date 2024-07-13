@@ -1,13 +1,12 @@
-import { sendLeagueLadAlerts } from "./src/DiscordAPI.js";
+import { sendLeagueLadAlerts, getGameNotificationData } from "./src/DiscordAPI.js";
 import fetchLeagueLadGameData from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { Firestore } from "@google-cloud/firestore";
 import { createRequire } from "module";
 import { resolve } from "node:path";
-import express from 'express';
+import express, { json } from 'express';
 import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
-import dayjs from "dayjs";
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -16,6 +15,9 @@ function getSecretVal(secret) {
 }
 
 function trackSentGames(toSend) {
+    const db = new Firestore({
+        projectId: 'lad-alert'
+    })
     toSend.forEach(async gameData => {
         const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
         const ladDoc = await ladDocRef.get();
@@ -30,26 +32,23 @@ function trackSentGames(toSend) {
 }
 
 export async function leagueLadCheck() {
-    const client = new SecretManagerServiceClient();
-    const db = new Firestore({
-        projectId: 'lad-alert'
-    })
+    const client = isDev ? null : new SecretManagerServiceClient();
     const riotAPI = isDev ? process.env.RIOT_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' }));
     const discAPI = isDev ? process.env.DISCORD_TOKEN : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' }));
     const channelID = isDev ? process.env.CHANNEL_ID : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest'}));
     const lads = isDev ? require(resolve(process.cwd(), "league_data", "lads.json")) : await downloadAsJson('league_data', 'lads.json');
     
-    let toSend = (await lads.map(async lad => await fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI))).filter(game => !!game)
+    let toSend = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI)))).filter(gameData => gameData !== null);
+    logger.log({ level: 'info', message: JSON.stringify(toSend) });
     if (!isDev) {
         trackSentGames(toSend);
         sendLeagueLadAlerts(toSend, channelID, discAPI);
     } else {
         logger.log({
             level: 'info',
-            message: `${getGameNotificationData(toSend)}`
+            message: `${getGameNotificationData(toSend).map(data => JSON.stringify(data)).join('\n')}`
         });
     }
-    return toSend;
 }             
 
 const app = express();
