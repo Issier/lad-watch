@@ -74,13 +74,6 @@ app.post('/', async (req, res) => {
       return;
     }
     
-    try {
-        leagueLadCheck()
-    } catch (err) {
-        logger.log({
-            level: 'error',
-            message: err
-        })
-    } 
+    leagueLadCheck()
     res.status(204).send('Found Lads');
   });
