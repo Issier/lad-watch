@@ -17,7 +17,6 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         'IRON': 0x964B00
     }
 
-    require(resolve(process.cwd(), "league_data", "lads.json"))
     const gameTypes = isDev ? require(resolve(process.cwd(), "league_data", "queues.json")) : await downloadAsJson('league_data', 'queues.json')
     const champions = isDev ? require(resolve(process.cwd(), "league_data", "champion.json")) : await downloadAsJson('league_data', 'champion.json')
 
