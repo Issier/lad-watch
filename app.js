@@ -74,6 +74,6 @@ app.post('/', async (req, res) => {
       return;
     }
     
-    leagueLadCheck()
+    await leagueLadCheck();
     res.status(204).send('Found Lads');
   });
