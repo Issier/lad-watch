@@ -40,9 +40,15 @@ export async function leagueLadCheck() {
     const lads = isDev ? require(resolve(process.cwd(), "league_data", "lads.json")) : await downloadAsJson('league_data', 'lads.json');
     
     let toSend = (await lads.map(async lad => await fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI))).filter(game => !!game)
-    if (!isDev) trackSentGames(toSend);
-
-    sendLeagueLadAlerts(toSend, channelID, discAPI);
+    if (!isDev) {
+        trackSentGames(toSend);
+        sendLeagueLadAlerts(toSend, channelID, discAPI);
+    } else {
+        logger.log({
+            level: 'info',
+            message: `${getGameNotificationData(toSend)}`
+        });
+    }
     return toSend;
 }             
 
@@ -69,6 +75,13 @@ app.post('/', async (req, res) => {
       return;
     }
     
-    const ladsAlerted = await leagueLadCheck();
+    try {
+        leagueLadCheck()
+    } catch (err) {
+        logger.log({
+            level: 'error',
+            message: err
+        })
+    } 
     res.status(204).send('Found Lads');
   });
