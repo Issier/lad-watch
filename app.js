@@ -15,6 +15,20 @@ function getSecretVal(secret) {
     return secret[0].payload.data.toString();
 }
 
+function trackSentGames(toSend) {
+    toSend.forEach(async gameData => {
+        const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
+        const ladDoc = await ladDocRef.get();
+        if (!ladDoc.exists) {
+            ladDocRef.set({
+                gameId: gameData.gameId,
+                champion: gameData.champion,
+                gameType: gameData.gameType
+            })
+        }
+    });
+}
+
 export async function leagueLadCheck() {
     const client = new SecretManagerServiceClient();
     const db = new Firestore({
@@ -25,22 +39,9 @@ export async function leagueLadCheck() {
     const channelID = isDev ? process.env.CHANNEL_ID : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest'}));
     const lads = isDev ? require(resolve(process.cwd(), "league_data", "lads.json")) : await downloadAsJson('league_data', 'lads.json');
     
-    let toSend = [];
-    for (const lad of lads) {
-        const gameData = await fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI);
-        if (!!gameData) {
-            const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
-            const ladDoc = await ladDocRef.get();
-            if (!ladDoc.exists) {
-                toSend.push(gameData);
-                await ladDocRef.set({
-                    gameId: gameData.gameId,
-                    champion: gameData.champion,
-                    gameType: gameData.gameType
-                })
-            }
-        }
-    }
+    let toSend = (await lads.map(async lad => await fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI))).filter(game => !!game)
+    if (!isDev) trackSentGames(toSend);
+
     if (dayjs().isAfter(dayjs('2023-12-25').hour(0).minute(59)) && dayjs().isBefore(dayjs('2023-12-25').hour(1).minute(10).second(0))) {
         const santaRef = db.collection('lads').doc('santa').collection('games').doc('christmas2023')
         const santa = await santaRef.get();
