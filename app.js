@@ -14,7 +14,8 @@ function getSecretVal(secret) {
     return secret[0].payload.data.toString();
 }
 
-function trackSentGames(toSend) {
+function checkSentGames(toSend) {
+    const filteredSend = []
     const db = new Firestore({
         projectId: 'lad-alert'
     })
@@ -22,6 +23,7 @@ function trackSentGames(toSend) {
         const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
         const ladDoc = await ladDocRef.get();
         if (!ladDoc.exists) {
+            filteredSend.push(gameData);
             ladDocRef.set({
                 gameId: gameData.gameId,
                 champion: gameData.champion,
@@ -29,6 +31,7 @@ function trackSentGames(toSend) {
             })
         }
     });
+    return filteredSend;
 }
 
 export async function leagueLadCheck() {
@@ -41,7 +44,7 @@ export async function leagueLadCheck() {
     let toSend = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI)))).filter(gameData => gameData !== null);
     logger.log({ level: 'info', message: JSON.stringify(toSend) });
     if (!isDev) {
-        trackSentGames(toSend);
+        toSend = checkSentGames(toSend);
         sendLeagueLadAlerts(toSend, channelID, discAPI);
     } else {
         logger.log({
