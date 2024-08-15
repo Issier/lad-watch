@@ -65,11 +65,19 @@ app.listen(port, () => {
 app.post('/', async (req, res) => {
     if (!req.body) {
       const msg = 'no Pub/Sub message received';
+      logger.log({
+        level: 'error',
+        message: `${msg} ${req.body}`
+    });
       res.status(400).send(`Bad Request: ${msg}`);
       return;
     }
     if (!req.body.message) {
       const msg = 'invalid Pub/Sub message format';
+      logger.log({
+        level: 'error',
+        message: `${msg} ${req.body}`
+        });
       res.status(400).send(`Bad Request: ${msg}`);
       return;
     }
