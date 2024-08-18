@@ -6,7 +6,7 @@ import { Storage } from "@google-cloud/storage";
 import { logger } from '../logger.js';
 
 export function getGameNotificationData(dataEntries) {
-    return dataEntries.map(gameData => {
+    notificationData = dataEntries.map(gameData => {
         return {
             summonerName: gameData.summonerName,
             rankColor: gameData.rankColorHex,
@@ -24,6 +24,13 @@ export function getGameNotificationData(dataEntries) {
             ]
         }
     })
+
+    logger.log({
+        level: 'info',
+        message: `Notification Data: ${JSON.stringify(notificationData)}`
+    })
+
+    return notificationData
 }
 
 export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) {
