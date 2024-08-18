@@ -103,10 +103,15 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
             return null;
         }
     } catch (error) {
-        if (error.response.status < 500) {
+        if (error?.response && error.response.status < 500) {
             logger.log({
                 level: 'error',
-                message: `Failed to fetch league lad data: ${JSON.stringify(error.response.data)}`
+                message: `Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`
+            })
+        } else {
+            logger.log({
+                level: 'error',
+                message: `Failed to fetch league lad data: ${error}`
             })
         }
         return undefined;
