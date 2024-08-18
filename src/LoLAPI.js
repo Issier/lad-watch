@@ -20,18 +20,18 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
                 level: 'info',
                 message: `Summoner ${ladName} not found in cache`
             })
-            puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
-            summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)).data.id;
+            riotInfo = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data
+            summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)).data
             logger.log({
                 level: 'info',
-                message: `Summoner ${ladName} found with puuid ${puuid} and summId ${summId}`
+                message: `Summoner ${ladName} found with ${JSON.stringify(riotInfo)} and ${JSON.stringify(summInfo)}`
             })
             puuidDoc.set({
                 gameName: ladName,
-                puuid: puuid,
-                summId: summId
+                puuid: riotInfo.puuid,
+                summId: summInfo.id
             })
-            return {puuid: puuid, gameName: ladName, summId: summId}
+            return {puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id}
         }
         return puuidData.data();
     } catch (error) {
