@@ -33,7 +33,7 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
             level: 'info',
             message: `Summoner ${ladName} found with ${JSON.stringify(summInfo)}`
         })
-        
+
         riotInfo = riotInfo.data;
         summInfo = summInfo.data;
         puuidDoc.set({
@@ -60,13 +60,12 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
     const gameTypes = isDev ? require(resolve(process.cwd(), "league_data", "queues.json")) : await downloadAsJson('league_data', 'queues.json')
     const champions = isDev ? require(resolve(process.cwd(), "league_data", "champion.json")) : await downloadAsJson('league_data', 'champion.json')
 
-    const axiosInstance = axios.create({
-        headers: {
-            'X-Riot-Token': riotAPIToken
-        }
-    })
-
     try {
+        const axiosInstance = axios.create({
+            headers: {
+                'X-Riot-Token': riotAPIToken
+            }
+        })
         /* Riot games account info */
         const riotInfo = await getRiotInfoWithCache(ladName, ladTag, axiosInstance);
         /* Summoner Ranked Data */
