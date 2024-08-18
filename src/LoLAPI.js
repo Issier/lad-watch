@@ -21,13 +21,11 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         })
         let riotInfo = (await axiosInstance
             .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
-        )
+        ).data
         let summInfo = (await axiosInstance
-            .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)
-        )
+            .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)
+        ).data
 
-        riotInfo = riotInfo.data;
-        summInfo = summInfo.data;
         puuidDoc.set({
             gameName: ladName,
             puuid: riotInfo.puuid,
