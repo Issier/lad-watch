@@ -21,20 +21,10 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         })
         let riotInfo = (await axiosInstance
             .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
-            .catch(function (error) {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to fetch riot info: ${error.toJSON()}`
-                })
-            })).data
+        ).data
         let summInfo = (await axiosInstance
             .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)
-            .catch(function (error) {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to fetch summoner info: ${error.toJSON()}`
-                })
-            })).data
+        ).data
         logger.log({
             level: 'info',
             message: `Summoner ${ladName} found with ${JSON.stringify(riotInfo)} and ${JSON.stringify(summInfo)}`
