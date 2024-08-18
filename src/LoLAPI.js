@@ -7,15 +7,9 @@ import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
-async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
+async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
     const db = new Firestore({
         projectId: 'lad-alert'
-    })
-
-    const axiosInstance = axios.create({
-        headers: {
-            'X-Riot-Token': riotAPIToken
-        }
     })
 
     const puuidDoc = db.collection('summoner').doc(ladName);
@@ -73,7 +67,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
             }
         })
         /* Riot games account info */
-        const riotInfo = await getRiotInfoWithCache(ladName, ladTag, riotAPIToken);
+        const riotInfo = await getRiotInfoWithCache(ladName, ladTag, axiosInstance);
         /* Summoner Ranked Data */
         const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
         /* Live Game Data */
