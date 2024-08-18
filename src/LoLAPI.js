@@ -58,6 +58,10 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         })
         /* Riot games account info */
         const riotInfo = await getRiotInfoWithCache(ladName, ladTag, axiosInstance);
+        logger.log({
+            level: 'info',
+            message: `Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`
+        })
         /* Summoner Ranked Data */
         const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
         /* Live Game Data */
