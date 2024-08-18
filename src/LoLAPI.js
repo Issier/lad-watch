@@ -6,6 +6,26 @@ import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
+async function getRiotInfoWithCache(ladName) {
+    const db = new Firestore({
+        projectId: 'lad-alert'
+    })
+
+    const puuidDoc = db.collection('summoner').doc(ladName);
+    const puuidData = await puuidDoc.get();
+    if (!puuidData.exists) {
+        puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
+        summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data.id;
+        puuidDoc.set({
+            gameName: ladName,
+            puuid: puuid,
+            summId: summId
+        })
+        return {puuid: puuid, gameName: ladName, summId: summId}
+    }
+    return puuidData.data();
+}
+
 export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
@@ -26,13 +46,15 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         }
     })
 
+    const db = new Firestore({
+        projectId: 'lad-alert'
+    })
+
     try {
         /* Riot games account info */
-        const riotInfo = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data;
-        /* Summoner Info */
-        const summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data;
+        const riotInfo = await getRiotInfoWithCache(ladName);
         /* Summoner Ranked Data */
-        const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summInfo.id}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
+        const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
         /* Live Game Data */
         try {
             let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${riotInfo.puuid}`)).data;
@@ -58,7 +80,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                 gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
                 champion: champion, 
                 championMastery: `${champMastery.toLocaleString()}`,
-                summonerId: summInfo.id,
+                summonerId: riotInfo.summId,
                 summonerName: riotInfo.gameName,
                 summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
                 liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +  
