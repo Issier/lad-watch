@@ -111,7 +111,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         } else {
             logger.log({
                 level: 'error',
-                message: `Failed to fetch league lad data: ${error}`
+                message: `Failed to fetch league lad data: ${JSON.stringify(error)}`
             })
         }
         return undefined;
