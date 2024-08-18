@@ -17,7 +17,7 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         const puuidData = await puuidDoc.get();
         if (!puuidData.exists) {
             puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
-            summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data.id;
+            summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)).data.id;
             puuidDoc.set({
                 gameName: ladName,
                 puuid: puuid,
