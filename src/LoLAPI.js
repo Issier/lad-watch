@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createRequire } from "module";
+import { Firestore } from "@google-cloud/firestore";
 import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
