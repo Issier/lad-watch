@@ -12,19 +12,27 @@ async function getRiotInfoWithCache(ladName) {
         projectId: 'lad-alert'
     })
 
-    const puuidDoc = db.collection('summoner').doc(ladName);
-    const puuidData = await puuidDoc.get();
-    if (!puuidData.exists) {
-        puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
-        summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data.id;
-        puuidDoc.set({
-            gameName: ladName,
-            puuid: puuid,
-            summId: summId
+    try {
+        const puuidDoc = db.collection('summoner').doc(ladName);
+        const puuidData = await puuidDoc.get();
+        if (!puuidData.exists) {
+            puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
+            summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)).data.id;
+            puuidDoc.set({
+                gameName: ladName,
+                puuid: puuid,
+                summId: summId
+            })
+            return {puuid: puuid, gameName: ladName, summId: summId}
+        }
+        return puuidData.data();
+    } catch (error) {
+        logger.log({
+            level: 'error',
+            message: `Failed to fetch riot info: ${JSON.stringify(error)}`
         })
-        return {puuid: puuid, gameName: ladName, summId: summId}
+        return undefined;
     }
-    return puuidData.data();
 }
 
 export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
