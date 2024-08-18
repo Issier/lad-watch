@@ -20,6 +20,11 @@ async function checkSentGames(toSend) {
         projectId: 'lad-alert'
     })
 
+    logger.log({
+        level: 'info',
+        message: `Filtering down from ${JSON.stringify(toSend)}`
+    })
+
     for(const gameData of toSend) {
         const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
         const ladDoc = await ladDocRef.get();
