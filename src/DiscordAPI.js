@@ -6,7 +6,7 @@ import { Storage } from "@google-cloud/storage";
 import { logger } from '../logger.js';
 
 export function getGameNotificationData(dataEntries) {
-    notificationData = dataEntries.map(gameData => {
+    let notificationData = dataEntries.map(gameData => {
         return {
             summonerName: gameData.summonerName,
             rankColor: gameData.rankColorHex,
