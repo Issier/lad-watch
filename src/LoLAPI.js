@@ -4,7 +4,6 @@ import { Firestore } from "@google-cloud/firestore";
 import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
-import { log } from 'console';
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -20,7 +19,7 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
             level: 'info',
             message: `Summoner ${ladName} not found in cache`
         })
-        riotInfo = (await axiosInstance
+        let riotInfo = (await axiosInstance
             .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
             .catch(function (error) {
                 logger.log({
@@ -28,7 +27,7 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
                     message: `Failed to fetch riot info: ${error.toJSON()}`
                 })
             })).data
-        summInfo = (await axiosInstance
+        let summInfo = (await axiosInstance
             .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)
             .catch(function (error) {
                 logger.log({
