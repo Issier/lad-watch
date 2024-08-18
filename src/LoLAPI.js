@@ -107,6 +107,11 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                     level: 'info',
                     message: `Summoner ${riotInfo.gameName} is not in a game`
                 })
+            } else {
+                logger.log({
+                    level: 'error',
+                    message: `Failed to fetch live game data: ${JSON.stringify(error)}`
+                })
             }
             return null;
         }
