@@ -102,7 +102,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                 seasonLosses: rankData.losses
             }
         } catch (error) {
-            if (error.response.status === 404) {
+            if (error?.response?.status === 404) {
                 logger.log({
                     level: 'info',
                     message: `Summoner ${riotInfo.gameName} is not in a game`
