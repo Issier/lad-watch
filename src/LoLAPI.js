@@ -22,17 +22,9 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         let riotInfo = (await axiosInstance
             .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
         )
-        logger.log({
-            level: 'info',
-            message: `Summoner ${ladName} found with ${JSON.stringify(riotInfo)}`
-        })
         let summInfo = (await axiosInstance
             .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)
         )
-        logger.log({
-            level: 'info',
-            message: `Summoner ${ladName} found with ${JSON.stringify(summInfo)}`
-        })
 
         riotInfo = riotInfo.data;
         summInfo = summInfo.data;
@@ -122,12 +114,8 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
                 level: 'error',
                 message: `Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`
             })
-        } else {
-            logger.log({
-                level: 'error',
-                message: `Failed to fetch league lad data: ${JSON.stringify(error)}`
-            })
+            return undefined;
         }
-        return undefined;
+        throw error
     }
 }
