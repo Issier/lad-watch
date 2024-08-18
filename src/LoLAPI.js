@@ -4,6 +4,7 @@ import { Firestore } from "@google-cloud/firestore";
 import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
+import { log } from 'console';
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -12,35 +13,41 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         projectId: 'lad-alert'
     })
 
-    try {
-        const puuidDoc = db.collection('summoner').doc(ladName);
-        const puuidData = await puuidDoc.get();
-        if (!puuidData.exists) {
-            logger.log({
-                level: 'info',
-                message: `Summoner ${ladName} not found in cache`
-            })
-            riotInfo = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data
-            summInfo = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)).data
-            logger.log({
-                level: 'info',
-                message: `Summoner ${ladName} found with ${JSON.stringify(riotInfo)} and ${JSON.stringify(summInfo)}`
-            })
-            puuidDoc.set({
-                gameName: ladName,
-                puuid: riotInfo.puuid,
-                summId: summInfo.id
-            })
-            return {puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id}
-        }
-        return puuidData.data();
-    } catch (error) {
+    const puuidDoc = db.collection('summoner').doc(ladName);
+    const puuidData = await puuidDoc.get();
+    if (!puuidData.exists) {
         logger.log({
-            level: 'error',
-            message: `Failed to fetch riot info: ${JSON.stringify(error)}`
+            level: 'info',
+            message: `Summoner ${ladName} not found in cache`
         })
-        return undefined;
+        riotInfo = (await axiosInstance
+            .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
+            .catch(function (error) {
+                logger.log({
+                    level: 'error',
+                    message: `Failed to fetch riot info: ${error.toJSON()}`
+                })
+            })).data
+        summInfo = (await axiosInstance
+            .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)
+            .catch(function (error) {
+                logger.log({
+                    level: 'error',
+                    message: `Failed to fetch summoner info: ${error.toJSON()}`
+                })
+            })).data
+        logger.log({
+            level: 'info',
+            message: `Summoner ${ladName} found with ${JSON.stringify(riotInfo)} and ${JSON.stringify(summInfo)}`
+        })
+        puuidDoc.set({
+            gameName: ladName,
+            puuid: riotInfo.puuid,
+            summId: summInfo.id
+        })
+        return {puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id}
     }
+    return puuidData.data();
 }
 
 export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
