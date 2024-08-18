@@ -17,7 +17,7 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
     if (!puuidData.exists) {
         logger.log({
             level: 'info',
-            message: `Summoner ${ladName} not found in cache`
+            message: `Summoner ${ladName}#${ladTag} with not found in cache`
         })
         let riotInfo = (await axiosInstance
             .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
