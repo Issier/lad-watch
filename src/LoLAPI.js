@@ -16,8 +16,16 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
         const puuidDoc = db.collection('summoner').doc(ladName);
         const puuidData = await puuidDoc.get();
         if (!puuidData.exists) {
+            logger.log({
+                level: 'info',
+                message: `Summoner ${ladName} not found in cache`
+            })
             puuid = (await axiosInstance.get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)).data.puuid
             summId = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`)).data.id;
+            logger.log({
+                level: 'info',
+                message: `Summoner ${ladName} found with puuid ${puuid} and summId ${summId}`
+            })
             puuidDoc.set({
                 gameName: ladName,
                 puuid: puuid,
@@ -53,10 +61,6 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
         headers: {
             'X-Riot-Token': riotAPIToken
         }
-    })
-
-    const db = new Firestore({
-        projectId: 'lad-alert'
     })
 
     try {
