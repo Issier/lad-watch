@@ -51,6 +51,12 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
              .bucket('lad-alert-champions')
              .file(formatedGameData.champImagePath)
              .download()
+
+        logger.log({
+            level: 'info',
+            message: `Loaded Discord Embed with Data: ${JSON.stringify(formatedGameData)}`
+        })
+
         images.push({contentType: 'image/png', data: champImage[0], name: formatedGameData.champImageFileName});
         summoners.push(formatedGameData.summonerName);
     })
