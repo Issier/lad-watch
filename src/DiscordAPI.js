@@ -51,10 +51,10 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
              .bucket('lad-alert-champions')
              .file(formatedGameData.champImagePath)
              .download()
-
+        
         logger.log({
             level: 'info',
-            message: `Loaded Discord Embed with Data: ${JSON.stringify(formatedGameData)}`
+            message: `Loaded Discord Embed with Data: ${JSON.stringify(formatedGameData)} with image having byte length of ${champImage[0].byteOffset}`
         })
 
         images.push({contentType: 'image/png', data: champImage[0], name: formatedGameData.champImageFileName});
@@ -71,6 +71,10 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
             logger.log({
                 level: 'info',
                 message: `Created discord message for ${summoners.join(',')}`
+            })
+            logger.log({
+                level: 'info',
+                message: `Discord Message Response: ${JSON.stringify(value)}`
             })
         }).catch(error => {
             logger.log({
