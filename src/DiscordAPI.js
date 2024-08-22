@@ -39,7 +39,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
     let embeds = [];
     let images = [];
     let summoners = [];
-    formattedGamesData = getGameNotificationData(dataEntries);
+    let formattedGamesData = getGameNotificationData(dataEntries);
     for(const formattedGameData of formattedGamesData) {
 
         embeds.push(new EmbedBuilder()
