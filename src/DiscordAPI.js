@@ -39,7 +39,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
     let embeds = [];
     let images = [];
     let summoners = [];
-    getGameNotificationData(dataEntries).forEach(async formatedGameData => {
+    for(const formatedGameData of dataEntries) {
         embeds.push(new EmbedBuilder()
             .setColor(formatedGameData.rankColor)
             .setTitle(formatedGameData.title)
@@ -59,8 +59,8 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
 
         images.push({contentType: 'image/png', data: champImage[0], name: formatedGameData.champImageFileName});
         summoners.push(formatedGameData.summonerName);
-    })
-;    
+    }
+
     const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
     const discordAPI = new API(rest);
     if (embeds.length > 0) {
