@@ -39,27 +39,28 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
     let embeds = [];
     let images = [];
     let summoners = [];
-    for(const entry of dataEntries) {
-        formatedGameData = getGameNotificationData(entry);
+    formattedGamesData = getGameNotificationData(dataEntries);
+    for(const formattedGameData of formattedGamesData) {
+
         embeds.push(new EmbedBuilder()
-            .setColor(formatedGameData.rankColor)
-            .setTitle(formatedGameData.title)
-            .setDescription(formatedGameData.description)
-            .setThumbnail(formatedGameData.thumbnail)
-            .setFields(...formatedGameData.fields));
+            .setColor(formattedGameData.rankColor)
+            .setTitle(formattedGameData.title)
+            .setDescription(formattedGameData.description)
+            .setThumbnail(formattedGameData.thumbnail)
+            .setFields(...formattedGameData.fields));
         
         const champImage = await storage
              .bucket('lad-alert-champions')
-             .file(formatedGameData.champImagePath)
+             .file(formattedGameData.champImagePath)
              .download()
         
         logger.log({
             level: 'info',
-            message: `Loaded Discord Embed with Data: ${JSON.stringify(formatedGameData)} with image having byte length of ${champImage[0].byteOffset}`
+            message: `Loaded Discord Embed with Data: ${JSON.stringify(formattedGameData)} with image having byte length of ${champImage[0].byteOffset}`
         })
 
-        images.push({contentType: 'image/png', data: champImage[0], name: formatedGameData.champImageFileName});
-        summoners.push(formatedGameData.summonerName);
+        images.push({contentType: 'image/png', data: champImage[0], name: formattedGameData.champImageFileName});
+        summoners.push(formattedGameData.summonerName);
     }
 
     const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
