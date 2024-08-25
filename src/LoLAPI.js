@@ -139,14 +139,14 @@ export async function fetchMostRecentCompletedGame(summonerId, riotAPIToken) {
     })
 
     try {
-        const matchList = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/match/v5/matches/by-puuid/${summonerId}/ids?start=0&count=1`)).data;
-        const matchData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/match/v5/matches/${matchList[0]}`)).data;
+        const matchList = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${summonerId}/ids?start=0&count=1`)).data;
+        const matchData = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/${matchList[0]}`)).data;
 
         return matchData;
     } catch (error) {
         logger.log({
             level: 'error',
-            message: `Failed to fetch most recent game data: ${JSON.stringify(error)}`
+            message: `Failed to fetch most recent game data for ${summonerId}`
         })
         return null;
     }
