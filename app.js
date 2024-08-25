@@ -26,17 +26,17 @@ async function sendGameInfoAlert(gameData) {
     let ladRefs = []
     let gameDataToSend = []
     for (const game of gameData) {
-        const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
+        const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
         let ladDoc = ladDocRef.get();
         if (!ladDoc.exists) {
             ladDocRef.set({
-                gameId: gameData.gameId,
-                champion: gameData.champion,
-                gameType: gameData.gameType,
+                gameId: game.gameId,
+                champion: game.champion,
+                gameType: game.gameType,
                 sentPostGame: false
             })
             ladRefs.push(ladDocRef);
-            gameDataToSend.push(gameData);
+            gameDataToSend.push(game);
         } 
     }
 
