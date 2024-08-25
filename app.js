@@ -66,7 +66,7 @@ async function sendPostGameUpdateAlerts(lads) {
         } else if (!!postGameData) {
             logger.log({
                 level: 'info',
-                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${postGameData.gameId} vs ${gameData.gameId}) ${JSON.stringify(postGameData)}`
+                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${postGameData.gameId} vs ${gameData.gameId})`
             })
         } else {
             logger.log({
