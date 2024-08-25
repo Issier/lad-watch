@@ -51,10 +51,10 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
             Game Version: [${gameVersion}](${`https://www.leagueoflegends.com/en-us/news/game-updates/patch-${gameVersion.split('.')[0]}-${gameVersion.split('.')[1]}-notes/`})
             Position: ${position || 'Unknown'}
 
-            ${postGameLadInfo?.doubleKills ? `⚔️ ${postGameLadInfo.doubleKills} Double Kills` : ''}
-            ${postGameLadInfo?.tripleKills ? `⚔️ ${postGameLadInfo.tripleKills} Triple Kills` : ''}
-            ${postGameLadInfo?.quadraKills ? `⚔️ ${postGameLadInfo.quadraKills} Quadra Kills` : ''}
-            ${postGameLadInfo?.pentaKills  ? `⚔️ ${postGameLadInfo.pentaKills} Penta Kills` : ''}
+            ${postGameLadInfo?.doubleKills ? `⚔️ ${postGameLadInfo.doubleKills} Double Kill${postGameLadInfo.doubleKills > 1 ? 's' : ''}` : ''}
+            ${postGameLadInfo?.tripleKills ? `⚔️ ${postGameLadInfo.tripleKills} Triple Kill${postGameLadInfo.tripleKills > 1 ? 's' : ''}` : ''}
+            ${postGameLadInfo?.quadraKills ? `⚔️ ${postGameLadInfo.quadraKills} Quadra Kill${postGameLadInfo.quadraKills > 1 ? 's' : ''}` : ''}
+            ${postGameLadInfo?.pentaKills  ? `⚔️ ${postGameLadInfo.pentaKills} Penta Kill${postGameLadInfo.pentaKills > 1 ? 's' : ''}` : ''}
     `;
 
     logger.log({
