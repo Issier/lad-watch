@@ -53,13 +53,15 @@ async function sendPostGameUpdateAlerts() {
         let gameData = game.data();
         let summonerId = game.ref.parent.parent.id;
         let postGameData = await fetchMostRecentCompletedGame(summonerId, riotAPI);
-        let postGameMessage = await sendPostGameUpdate(
-            postGameData.info, 
-            postGameData.info.participants.find(participant => participant.summonerId === summonerId), 
-            gameData.messageId, 
-            channelID, 
-            discAPI);
-        game.ref.update({sentPostGame: true, postGameUpdateId: postGameMessage.id});
+        if (!!postGameData && postGameData.gameId === gameData.gameId) {
+            let postGameMessage = await sendPostGameUpdate(
+                postGameData.info, 
+                postGameData.info.participants.find(participant => participant.summonerId === summonerId), 
+                gameData.messageId, 
+                channelID, 
+                discAPI);
+            game.ref.update({sentPostGame: true, postGameUpdateId: postGameMessage.id});
+        }
     });
 }
 
