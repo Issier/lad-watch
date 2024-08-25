@@ -62,22 +62,15 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
         message: `Sending Post Game Update with Content: ${content}`
     })
 
-    return discordAPI.channels.createThread(channelID,{
-        name: `${postGameLadInfo?.summonerName}'s Post Game Discussion`,
-        autoArchiveDuration: 1440,
-    }, messageId).then(thread => {
-        return discordAPI.channels.createMessage(thread.id, {
-            content: content
-        }).catch(error => {
-            logger.log({
-                level: 'error',
-                message: `Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
-            })
-        });
+    return discordAPI.channels.createMessage(channelID, {
+        content: content,
+        message_reference: {
+            message_id: messageId
+        }
     }).catch(error => {
         logger.log({
             level: 'error',
-            message: `Failed to create thread for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
+            message: `Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
         })
     });
 }
