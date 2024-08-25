@@ -45,7 +45,7 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
     let content = `
                 ## ${postGameLadInfo?.summonerName} ${postGameLadInfo?.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo?.championName} in ${gameDuration}
                 
-            >>> KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
+                >>> KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
             Level at end of Game: ${postGameLadInfo?.champLevel}
             Game Duration: ${gameDuration}
             Game Version: [${gameVersion}](${`https://www.leagueoflegends.com/en-us/news/game-updates/patch-${gameVersion.split('.')[0]}-${gameVersion.split('.')[1]}-notes/`})
