@@ -40,7 +40,7 @@ export async function getRankData(axiosInstance, riotInfo) {
     return (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
 }
 
-export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
+export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
         'EMERALD': 0x50C878,
