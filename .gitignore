@@ -4,3 +4,4 @@ node_modules
 champion
 league_data
 .vscode
+dist

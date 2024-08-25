@@ -78,7 +78,7 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
     } else {
         return discordAPI.channels.createThread(channelID,{
             name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName}'s Post Game Discussion`,
-            autoArchiveDuration: 1440,
+            auto_archive_duration: 1440,
         }, messageId).then(thread => {
             return discordAPI.channels.createMessage(thread.id, {
                 content: content

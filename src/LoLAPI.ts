@@ -1,11 +1,7 @@
 import axios from 'axios';
-import { createRequire } from "module";
 import { Firestore } from "@google-cloud/firestore";
-import { resolve } from "node:path";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
-const require = createRequire(import.meta.url);
-const isDev = process.env.NODE_ENV === 'development';
 
 export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const db = new Firestore({
@@ -63,8 +59,8 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
         'IRON': 0x964B00
     }
 
-    const gameTypes = isDev ? require(resolve(process.cwd(), "league_data", "queues.json")) : await downloadAsJson('league_data', 'queues.json')
-    const champions = isDev ? require(resolve(process.cwd(), "league_data", "champion.json")) : await downloadAsJson('league_data', 'champion.json')
+    const gameTypes = await downloadAsJson('league_data', 'queues.json')
+    const champions = await downloadAsJson('league_data', 'champion.json')
 
     try {
         const axiosInstance = axios.create({
@@ -96,7 +92,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
                 }
             }
 
-            const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime));
+            const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
 
             /* Live Game Champion Mastery for Summoner */
             const champMastery = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${riotInfo.puuid}/by-champion/${summChar}`)).data.championPoints;
@@ -158,7 +154,7 @@ export async function fetchMostRecentCompletedGame(puuid, riotAPIToken) {
     } catch (error) {
         logger.log({
             level: 'error',
-            message: `Failed to fetch most recent game data for ${summonerId}`
+            message: `Failed to fetch most recent game data for ${puuid}`
         })
         return null;
     }
