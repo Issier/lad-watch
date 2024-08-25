@@ -23,18 +23,28 @@ const discAPI = isDev ? process.env.DISCORD_TOKEN : getSecretVal(await client.ac
 const channelID = isDev ? process.env.CHANNEL_ID : getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest' }));
 
 async function sendGameInfoAlert(gameData) {
-    const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
-    let ladDoc = ladDocRef.get();
-    if (!ladDoc.exists) {
-        let apiMessage = await sendLeagueLadAlerts(gameData, channelID, discAPI);
-        ladDocRef.set({
-            gameId: gameData.gameId,
-            champion: gameData.champion,
-            gameType: gameData.gameType,
-            messageId: apiMessage.id,
-            sentPostGame: false
-        })
-    } 
+    let ladRefs = []
+    let gameDataToSend = []
+    for (const game of gameData) {
+        const ladDocRef = db.collection('lads').doc(gameData.summonerId).collection('games').doc('' + gameData.gameId)
+        let ladDoc = ladDocRef.get();
+        if (!ladDoc.exists) {
+            ladDocRef.set({
+                gameId: gameData.gameId,
+                champion: gameData.champion,
+                gameType: gameData.gameType,
+                sentPostGame: false
+            })
+            ladRefs.push(ladDocRef);
+            gameDataToSend.push(gameData);
+        } 
+    }
+
+    let apiMessage = await sendLeagueLadAlerts(gameDataToSend, channelID, discAPI);
+
+    for (const ladRef of ladRefs) {
+        ladRef.update({messageId: apiMessage.id});
+    }
 }
 
 async function sendPostGameUpdateAlerts() {
@@ -59,10 +69,8 @@ export async function leagueLadCheck() {
     let activeGames = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI)))).filter(gameData => !!gameData);
     logger.log({ level: 'info', message: JSON.stringify(activeGames) });
     if (!isDev) {
-        for (const gameData of activeGames) {
-            sendGameInfoAlert(gameData);
-        }
-    } else {
+        sendGameInfoAlert(activeGames);
+     } else {
         logger.log({
             level: 'info',
             message: `${getGameNotificationData(activeGames).map(data => JSON.stringify(data)).join('\n')}`
