@@ -41,10 +41,9 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
 
     const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
     const discordAPI = new API(rest);
-    if (embeds.length > 0) {
-        return discordAPI.channels.createMessage(channelID, {
-            content: `
-                ${postGameLadInfo.summonerName} ${postGameLadInfo.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo.champion} in ${gameDuration}
+
+    let content = `
+                ${postGameLadInfo?.summonerName} ${postGameLadInfo?.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo?.champion} in ${gameDuration}
                 
                 KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
                 Level at end of Game: ${postGameLadInfo?.champLevel}
@@ -56,7 +55,16 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
                 ${postGameLadInfo?.tripleKills ? `${postGameLadInfo.tripleKills} Triple Kills` : ''}
                 ${postGameLadInfo?.quadraKills ? `${postGameLadInfo.quadraKills} Quadra Kills` : ''}
                 ${postGameLadInfo?.pentaKills  ? `${postGameLadInfo.pentaKills} Penta Kills` : ''}
-            `,
+    `;
+
+    if (embeds.length > 0) {
+        logger.log({
+            level: 'info',
+            message: `Sending Post Game Update with Content: ${content}`
+        })
+
+        return discordAPI.channels.createMessage(channelID, {
+            content: content,
             message_reference: {
                 message_id: messageId
             }
