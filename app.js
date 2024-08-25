@@ -50,7 +50,7 @@ async function sendGameInfoAlert(gameData) {
 async function sendPostGameUpdateAlerts(lads) {
     let unsentPostGames = await db.collectionGroup('games').where('sentPostGame', '==', false).get();
     unsentPostGames.forEach(async game => {
-        let gameData = game.data();
+        let gameData = await game.data();
         let summonerId = game.ref.parent.parent.id;
         let summInfo = await db.collection('summoner').where('summId', '==', summonerId).get();
         let puuid = summInfo.docs[0].data().puuid;
@@ -66,7 +66,7 @@ async function sendPostGameUpdateAlerts(lads) {
         } else if (!!postGameData) {
             logger.log({
                 level: 'info',
-                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game`
+                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${postGameData.gameId} vs ${gameData.gameId}) ${JSON.stringify(postGameData)}`
             })
         } else {
             logger.log({
