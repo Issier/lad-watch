@@ -27,7 +27,7 @@ async function sendGameInfoAlert(gameData) {
     let gameDataToSend = []
     for (const game of gameData) {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
-        let ladDoc = ladDocRef.get();
+        let ladDoc = await ladDocRef.get();
         if (!ladDoc.exists) {
             ladDocRef.set({
                 gameId: game.gameId,
