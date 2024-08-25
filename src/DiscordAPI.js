@@ -33,6 +33,42 @@ export function getGameNotificationData(dataEntries) {
     return notificationData
 }
 
+export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageId, channelID, discordToken) {
+    let gameDuration = `${Math.floor(postGameInfo.gameDuration / 60)}:${(postGameInfo.gameDuration % 60).toString().padStart(2, '0')}`;
+    let gameVersion = postGameInfo.gameVersion.split('.').slice(0, 2).join('.');  
+    
+    let position = `${postGameLadInfo?.teamPosition?.slice(0, 1)}${postGameLadInfo?.teamPosition?.toLowerCase()?.slice(1)}`
+
+    const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
+    const discordAPI = new API(rest);
+    if (embeds.length > 0) {
+        return discordAPI.channels.createMessage(channelID, {
+            content: `
+                ${postGameLadInfo.summonerName} ${postGameLadInfo.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo.champion} in ${gameDuration}
+                
+                KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
+                Level at end of Game: ${postGameLadInfo?.champLevel}
+                Game Duration: ${gameDuration}
+                Game Version: ${gameVersion}
+                Position: ${position || 'Unknown'}
+
+                ${postGameLadInfo?.doubleKills ? `${postGameLadInfo.doubleKills} Double Kills` : ''}
+                ${postGameLadInfo?.tripleKills ? `${postGameLadInfo.tripleKills} Triple Kills` : ''}
+                ${postGameLadInfo?.quadraKills ? `${postGameLadInfo.quadraKills} Quadra Kills` : ''}
+                ${postGameLadInfo?.pentaKills  ? `${postGameLadInfo.pentaKills} Penta Kills` : ''}
+            `,
+            message_reference: {
+                message_id: messageId
+            }
+        }).catch(error => {
+            logger.log({
+                level: 'error',
+                message: `Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
+            })
+        });
+    } 
+}
+
 export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) {
     const storage = new Storage();
 
@@ -66,18 +102,9 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
     const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
     const discordAPI = new API(rest);
     if (embeds.length > 0) {
-        discordAPI.channels.createMessage(channelID, {
+        return discordAPI.channels.createMessage(channelID, {
             embeds: embeds,
             files: images
-        }).then(value => {
-            logger.log({
-                level: 'info',
-                message: `Created discord message for ${summoners.join(',')}`
-            })
-            logger.log({
-                level: 'info',
-                message: `Discord Message Response: ${JSON.stringify(value)}`
-            })
         }).catch(error => {
             logger.log({
                 level: 'error',

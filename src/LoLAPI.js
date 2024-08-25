@@ -36,6 +36,10 @@ async function getRiotInfoWithCache(ladName, ladTag, axiosInstance) {
     return puuidData.data();
 }
 
+export async function getRankData(axiosInstance, riotInfo) {
+    return (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
+}
+
 export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
@@ -63,7 +67,7 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
             message: `Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`
         })
         /* Summoner Ranked Data */
-        const rankData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
+        const rankData = await getRankData(axiosInstance, riotInfo);
         /* Live Game Data */
         try {
             let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${riotInfo.puuid}`)).data;
@@ -124,5 +128,26 @@ export default async function fetchLeagueLadGameData(ladName, ladTag, riotAPITok
             return undefined;
         }
         throw error
+    }
+}
+
+export async function fetchMostRecentCompletedGame(summonerId, riotAPIToken) {
+    const axiosInstance = axios.create({
+        headers: {
+            'X-Riot-Token': riotAPIToken
+        }
+    })
+
+    try {
+        const matchList = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/match/v5/matches/by-puuid/${summonerId}/ids?start=0&count=1`)).data;
+        const matchData = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/match/v5/matches/${matchList[0]}`)).data;
+
+        return matchData;
+    } catch (error) {
+        logger.log({
+            level: 'error',
+            message: `Failed to fetch most recent game data: ${JSON.stringify(error)}`
+        })
+        return null;
     }
 }
