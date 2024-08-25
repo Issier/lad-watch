@@ -1,5 +1,5 @@
 import { sendLeagueLadAlerts, getGameNotificationData, sendPostGameUpdate } from "./src/DiscordAPI.js";
-import { fetchLeagueLadGameData, fetchMostRecentCompletedGame } from "./src/LoLAPI.js";
+import { fetchLeagueLadGameData, fetchMostRecentCompletedGame, getRiotInfoWithCache } from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { Firestore } from "@google-cloud/firestore";
 import { createRequire } from "module";
@@ -47,12 +47,14 @@ async function sendGameInfoAlert(gameData) {
     }
 }
 
-async function sendPostGameUpdateAlerts() {
+async function sendPostGameUpdateAlerts(lads) {
     let unsentPostGames = await db.collectionGroup('games').where('sentPostGame', '==', false).get();
     unsentPostGames.forEach(async game => {
         let gameData = game.data();
         let summonerId = game.ref.parent.parent.id;
-        let postGameData = await fetchMostRecentCompletedGame(summonerId, riotAPI);
+        let summInfo = await db.collection('summoner').where('summId', '==', summonerId).get();
+        let puuid = summInfo.docs[0].data().puuid;
+        let postGameData = await fetchMostRecentCompletedGame(puuid, riotAPI);
         if (!!postGameData && postGameData.gameId === gameData.gameId) {
             let postGameMessage = await sendPostGameUpdate(
                 postGameData.info, 
@@ -61,6 +63,16 @@ async function sendPostGameUpdateAlerts() {
                 channelID, 
                 discAPI);
             game.ref.update({sentPostGame: true, postGameUpdateId: postGameMessage.id});
+        } else if (!!postGameData) {
+            logger.log({
+                level: 'info',
+                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game`
+            })
+        } else {
+            logger.log({
+                level: 'info',
+                message: `No Post Game for ${summonerId}`
+            })
         }
     });
 }
@@ -79,7 +91,7 @@ export async function leagueLadCheck() {
         });
     }
 
-    sendPostGameUpdateAlerts();
+    sendPostGameUpdateAlerts(lads);
 }
 
 const app = express();

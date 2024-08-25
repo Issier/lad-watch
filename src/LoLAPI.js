@@ -7,7 +7,7 @@ import { logger } from '../logger.js';
 const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
 
-async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
+export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const db = new Firestore({
         projectId: 'lad-alert'
     })
@@ -143,7 +143,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     }
 }
 
-export async function fetchMostRecentCompletedGame(summonerId, riotAPIToken) {
+export async function fetchMostRecentCompletedGame(puuid, riotAPIToken) {
     const axiosInstance = axios.create({
         headers: {
             'X-Riot-Token': riotAPIToken
@@ -151,7 +151,7 @@ export async function fetchMostRecentCompletedGame(summonerId, riotAPIToken) {
     })
 
     try {
-        const matchList = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${summonerId}/ids?start=0&count=1`)).data;
+        const matchList = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`)).data;
         const matchData = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/${matchList[0]}`)).data;
 
         return matchData;
