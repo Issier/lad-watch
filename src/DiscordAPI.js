@@ -43,18 +43,18 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
     const discordAPI = new API(rest);
 
     let content = `
-                ${postGameLadInfo?.summonerName} ${postGameLadInfo?.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo?.championName} in ${gameDuration}
+                ## ${postGameLadInfo?.summonerName} ${postGameLadInfo?.win ? 'Won' : 'Lost'} a game on ${postGameLadInfo?.championName} in ${gameDuration}
                 
-                KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
-                Level at end of Game: ${postGameLadInfo?.champLevel}
-                Game Duration: ${gameDuration}
-                Game Version: ${gameVersion}
-                Position: ${position || 'Unknown'}
+            >>> KDA: ${postGameLadInfo?.kills}/${postGameLadInfo?.deaths}/${postGameLadInfo?.assists}
+            Level at end of Game: ${postGameLadInfo?.champLevel}
+            Game Duration: ${gameDuration}
+            Game Version: [${gameVersion}](${`https://www.leagueoflegends.com/en-us/news/game-updates/patch-${gameVersion.split('.')[0]}-${gameVersion.split('.')[1]}-notes/`})
+            Position: ${position || 'Unknown'}
 
-                ${postGameLadInfo?.doubleKills ? `${postGameLadInfo.doubleKills} Double Kills` : ''}
-                ${postGameLadInfo?.tripleKills ? `${postGameLadInfo.tripleKills} Triple Kills` : ''}
-                ${postGameLadInfo?.quadraKills ? `${postGameLadInfo.quadraKills} Quadra Kills` : ''}
-                ${postGameLadInfo?.pentaKills  ? `${postGameLadInfo.pentaKills} Penta Kills` : ''}
+            ${postGameLadInfo?.doubleKills ? `⚔️ ${postGameLadInfo.doubleKills} Double Kills` : ''}
+            ${postGameLadInfo?.tripleKills ? `⚔️ ${postGameLadInfo.tripleKills} Triple Kills` : ''}
+            ${postGameLadInfo?.quadraKills ? `⚔️ ${postGameLadInfo.quadraKills} Quadra Kills` : ''}
+            ${postGameLadInfo?.pentaKills  ? `⚔️ ${postGameLadInfo.pentaKills} Penta Kills` : ''}
     `;
 
     logger.log({
@@ -77,7 +77,7 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
 
     } else {
         return discordAPI.channels.createThread(channelID,{
-            name: `${postGameLadInfo?.summonerName}'s Post Game Discussion`,
+            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName}'s Post Game Discussion`,
             autoArchiveDuration: 1440,
         }, messageId).then(thread => {
             return discordAPI.channels.createMessage(thread.id, {
