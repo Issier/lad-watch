@@ -7,8 +7,8 @@ import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
 import { APIMessage } from "@discordjs/core";
 
-function getSecretVal(secret) {
-    return secret[0].payload.data.toString();
+async function getSecretVal(secret): Promise<string> {
+    return (await secret)[0].payload.data.toString();
 }
 
 const db = new Firestore({
@@ -19,20 +19,21 @@ const client = new SecretManagerServiceClient();
 async function sendGameInfoAlert(gameData, channelID, discAPI) {
     let ladRefs = []
     let gameDataToSend = []
-    for (const game of gameData) {
+    await Promise.all(gameData.map(async game => {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
-        let ladDoc = await ladDocRef.get();
-        if (!ladDoc.exists) {
-            ladDocRef.set({
-                gameId: game.gameId,
-                champion: game.champion,
-                gameType: game.gameType,
-                sentPostGame: false
-            })
-            ladRefs.push(ladDocRef);
-            gameDataToSend.push(game);
-        } 
-    }
+        ladDocRef.get().then(ladDoc => {
+            if (!ladDoc.exists) {
+                ladDocRef.set({
+                    gameId: game.gameId,
+                    champion: game.champion,
+                    gameType: game.gameType,
+                    sentPostGame: false
+                })
+                ladRefs.push(ladDocRef);
+                gameDataToSend.push(game);
+            } 
+        })
+    }));
 
     let apiMessage: void | APIMessage = await sendLeagueLadAlerts(gameDataToSend, channelID, discAPI);
 
@@ -52,15 +53,17 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
         let puuid = summInfo.docs[0].data().puuid;
         let postGameData = await fetchMostRecentCompletedGame(puuid, riotAPI);
         if (!!postGameData && postGameData.info.gameId === gameData.gameId) {
-            let postGameMessage: void | APIMessage = await sendPostGameUpdate(
+            sendPostGameUpdate(
                 postGameData.info, 
                 postGameData.info.participants.find(participant => participant.summonerId === summonerId), 
                 gameData.messageId, 
                 channelID, 
-                discAPI);
-            if (!!postGameMessage) {
-                game.ref.update({sentPostGame: true, postGameUpdateId: postGameMessage.id});
-            }
+                discAPI
+            ).then(message => {
+                if (!!message) {
+                    game.ref.update({sentPostGame: true, postGameUpdateId: message.id})
+                };
+            });
         } else if (!!postGameData) {
             logger.log({
                 level: 'info',
@@ -80,8 +83,8 @@ export async function leagueLadCheck(riotAPI, discAPI, channelID) {
 
     let activeGames = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI)))).filter(gameData => !!gameData);
     logger.log({ level: 'info', message: JSON.stringify(activeGames) });
-    sendGameInfoAlert(activeGames, channelID, discAPI);
-    sendPostGameUpdateAlerts(riotAPI, discAPI, channelID);
+    sendGameInfoAlert(activeGames, channelID, discAPI),
+    sendPostGameUpdateAlerts(riotAPI, discAPI, channelID)
 }
 
 const app = express();
@@ -115,10 +118,13 @@ app.post('/', async (req, res) => {
         return;
     }
 
-    const riotAPI = getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' }));
-    const discAPI = getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' }));
-    const channelID = getSecretVal(await client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest' }));
+    const [riotAPI, discAPI, channelID] = await Promise.all([
+        getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' })),
+        getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' })),
+        getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest' }))
+    ]);
 
-    await leagueLadCheck(riotAPI, discAPI, channelID);
-    res.status(204).send('Found Lads');
+    leagueLadCheck(riotAPI, discAPI, channelID).then(() => {
+        res.status(204).send('Found Lads');
+    });
 });

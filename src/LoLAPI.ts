@@ -6,7 +6,7 @@ import { logger } from '../logger.js';
 export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const db = new Firestore({
         projectId: 'lad-alert'
-    })
+    });
 
     const riotAPI = new RiotAPI(riotAPIToken);
 
@@ -41,8 +41,10 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
         'IRON': 0x964B00
     }
 
-    const gameTypes = await downloadAsJson('league_data', 'queues.json')
-    const champions = await downloadAsJson('league_data', 'champion.json')
+    const [gameTypes, champions] = await Promise.all([
+        downloadAsJson('league_data', 'queues.json'),
+        downloadAsJson('league_data', 'champion.json')
+    ]);
 
     try {
         const riotAPI = new RiotAPI(riotAPIToken);
