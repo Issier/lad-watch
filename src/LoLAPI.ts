@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { RiotAPI, RiotAPITypes, PlatformId } from "@fightmegg/riot-api";
 import { Firestore } from "@google-cloud/firestore";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
@@ -8,11 +8,7 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
         projectId: 'lad-alert'
     })
 
-    const axiosInstance = axios.create({
-        headers: {
-            'X-Riot-Token': riotAPIToken
-        }
-    })
+    const riotAPI = new RiotAPI(riotAPIToken);
 
     const puuidDoc = db.collection('summoner').doc(ladName);
     const puuidData = await puuidDoc.get();
@@ -21,12 +17,8 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
             level: 'info',
             message: `Summoner ${ladName}#${ladTag} with not found in cache`
         })
-        let riotInfo = (await axiosInstance
-            .get(`https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${ladName}/${ladTag}`)
-        ).data
-        let summInfo = (await axiosInstance
-            .get(`https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${riotInfo.puuid}`)
-        ).data
+        let riotInfo: RiotAPITypes.Account.AccountDTO = await riotAPI.account.getByRiotId({region: PlatformId.AMERICAS, gameName: ladName, tagLine: ladTag});
+        let summInfo: RiotAPITypes.Summoner.SummonerDTO = await riotAPI.summoner.getByPUUID({region: PlatformId.NA1, puuid: riotInfo.puuid});
 
         puuidDoc.set({
             gameName: ladName,
@@ -36,16 +28,6 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
         return {puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id}
     }
     return puuidData.data();
-}
-
-export async function getRankData(riotAPIToken, riotInfo) {
-    const axiosInstance = axios.create({
-        headers: {
-            'X-Riot-Token': riotAPIToken
-        }
-    })
-
-    return (await axiosInstance.get(`https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${riotInfo.summId}`)).data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
 }
 
 export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
@@ -63,69 +45,97 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
     const champions = await downloadAsJson('league_data', 'champion.json')
 
     try {
-        const axiosInstance = axios.create({
-            headers: {
-                'X-Riot-Token': riotAPIToken
-            }
-        })
+        const riotAPI = new RiotAPI(riotAPIToken);
         /* Riot games account info */
-        const riotInfo = await getRiotInfoWithCache(ladName, ladTag, riotAPIToken);
+        const riotInfo = await getRiotInfoWithCache(ladName, ladTag, riotAPIToken).catch(error => {
+            logger.log({
+                level: 'error',
+                message: `Failed to fetch riot info for ${ladName}#${ladTag}: ${JSON.stringify(error)}}`
+            })
+            throw error;
+        });
+
         logger.log({
             level: 'info',
             message: `Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`
         })
         /* Summoner Ranked Data */
-        const rankData = await getRankData(riotAPIToken, riotInfo);
-        /* Live Game Data */
-        try {
-            let liveGame = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${riotInfo.puuid}`)).data;
-            const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
-
-            const summChar = liveGame.participants.filter(participant => {
-                return participant.puuid === riotInfo.puuid;
-            })[0].championId;
-
-            let champion = ""
-            for (const champ in champions.data) {
-                if (champions.data[champ].key == summChar) {
-                    champion = champ;
-                }
-            }
-
-            const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
-
-            /* Live Game Champion Mastery for Summoner */
-            const champMastery = (await axiosInstance.get(`https://na1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${riotInfo.puuid}/by-champion/${summChar}`)).data.championPoints;
-
-            return {
-                gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
-                champion: champion, 
-                championMastery: `${champMastery.toLocaleString()}`,
-                summonerId: riotInfo.summId,
-                summonerName: riotInfo.gameName,
-                summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
-                liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +  
-                            `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
-                gameType: gameType.description.replace(' games', ''),
-                rankColorHex: rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
-                gameId: liveGame.gameId,
-                hotStreak: rankData.hotStreak,
-                seasonWins: rankData.wins,
-                seasonLosses: rankData.losses
-            }
-        } catch (error) {
-            if (error?.response?.status === 404) {
-                logger.log({
-                    level: 'info',
-                    message: `Summoner ${riotInfo.gameName} is not in a game`
-                })
-            } else {
+        const rankData: RiotAPITypes.League.LeagueEntryDTO = (await riotAPI
+            .league
+            .getEntriesBySummonerId({
+                region: PlatformId.NA1, 
+                summonerId: riotInfo.summId
+            }).catch(error => {
                 logger.log({
                     level: 'error',
-                    message: `Failed to fetch live game data: ${JSON.stringify(error)}`
+                    message: `Failed to fetch rank data: ${JSON.stringify(error)}}`
                 })
+                throw error;
+            })).filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
+
+        /* Live Game Data */
+        logger.info(`Fetching live game data for ${ladName}#${ladTag}, ${riotInfo.summId}`)
+        let liveGame: RiotAPITypes.Spectator.CurrentGameInfoDTO = await riotAPI
+            .spectator
+            .getBySummonerId({
+                region: PlatformId.NA1, 
+                summonerId: riotInfo.puuid
+            }).then(value => {
+                logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
+                return value;
+            }).catch(error => {
+                logger.log({
+                    level: 'error',
+                    message: `Failed to fetch live game data: ${JSON.stringify(error)}}`
+                })
+                throw error;
+            });
+        
+        const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
+
+        const summChar = liveGame.participants.filter(participant => {
+            return participant.puuid === riotInfo.puuid;
+        })[0].championId;
+
+        let champion = ""
+        for (const champ in champions.data) {
+            if (champions.data[champ].key == summChar) {
+                champion = champ;
             }
-            return null;
+        }
+
+        const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
+
+        /* Live Game Champion Mastery for Summoner */
+        const champMastery = (await riotAPI
+            .championMastery
+            .getChampion({
+                region: PlatformId.NA1, 
+                summonerId: riotInfo.summId, 
+                championId: summChar
+            }).catch(error => {
+                logger.log({
+                    level: 'error',
+                    message: `Failed to fetch champion mastery data: ${JSON.stringify(error)}}`
+                });
+                throw error;
+            })).championPoints;
+
+        return {
+            gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
+            champion: champion, 
+            championMastery: `${champMastery.toLocaleString()}`,
+            summonerId: riotInfo.summId,
+            summonerName: riotInfo.gameName,
+            summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
+            liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +  
+                        `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
+            gameType: gameType.description.replace(' games', ''),
+            rankColorHex: rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
+            gameId: liveGame.gameId,
+            hotStreak: rankData.hotStreak,
+            seasonWins: rankData.wins,
+            seasonLosses: rankData.losses
         }
     } catch (error) {
         if (error?.response && error.response.status < 500) {
@@ -133,22 +143,17 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
                 level: 'error',
                 message: `Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`
             })
-            return undefined;
         }
-        throw error
+        return undefined;
     }
 }
 
 export async function fetchMostRecentCompletedGame(puuid, riotAPIToken) {
-    const axiosInstance = axios.create({
-        headers: {
-            'X-Riot-Token': riotAPIToken
-        }
-    })
+    const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const matchList = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`)).data;
-        const matchData = (await axiosInstance.get(`https://americas.api.riotgames.com/lol/match/v5/matches/${matchList[0]}`)).data;
+        const matchList = (await riotAPI.matchV5.getIdsByPuuid({cluster: PlatformId.AMERICAS, puuid: puuid, params: {start: 0, count: 1}}));
+        const matchData = (await riotAPI.matchV5.getMatchById({cluster: PlatformId.AMERICAS, matchId: matchList[0]}));
 
         return matchData;
     } catch (error) {
