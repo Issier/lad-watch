@@ -106,25 +106,9 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
 
         const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
 
-        /* Live Game Champion Mastery for Summoner */
-        const champMastery = (await riotAPI
-            .championMastery
-            .getChampion({
-                region: PlatformId.NA1, 
-                summonerId: riotInfo.summId, 
-                championId: summChar
-            }).catch(error => {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to fetch champion mastery data: ${JSON.stringify(error)}}`
-                });
-                throw error;
-            })).championPoints;
-
         return {
             gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
             champion: champion, 
-            championMastery: `${champMastery.toLocaleString()}`,
             summonerId: riotInfo.summId,
             summonerName: riotInfo.gameName,
             summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,

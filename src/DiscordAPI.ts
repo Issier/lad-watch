@@ -17,7 +17,6 @@ export function getGameNotificationData(dataEntries) {
             thumbnail: `attachment://${gameData.champion}.png`,
             fields: [
                 {name: '\u200B', value: '\u200B'},
-                {name: 'Champion Mastery', value: gameData.championMastery, inline: true},
                 {name: 'Current Solo Queue Rank', value: gameData.summonerRank, inline: true},
                 {name: 'Game Time', value: gameData.gameTime, inline: true},    
                 {name : 'Live Game Pages', value: gameData.liveGamePages}
