@@ -139,7 +139,7 @@ export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) 
         }).catch(error => {
             logger.log({
                 level: 'error',
-                message: `Failed to send discord message for ${summoners.join(',')}`
+                message: `Failed to send discord message for ${summoners.join(',')}, ${channelID}: ${JSON.stringify(error)}`
             })
         });
     }
