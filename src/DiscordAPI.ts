@@ -62,6 +62,9 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
         message: `Sending Post Game Update with Content: ${content}`
     })
 
+    if (!messageId) {
+        throw new Error('No Message ID provided for Post Game Update');
+    }
 
     const message = await discordAPI.channels.getMessage(channelID, messageId);
 
