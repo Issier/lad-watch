@@ -4,6 +4,7 @@ import { bold } from '@discordjs/formatters';
 import { EmbedBuilder } from '@discordjs/builders';
 import { Storage } from "@google-cloud/storage";
 import { logger } from '../logger.js';
+import { RiotAPITypes } from '@fightmegg/riot-api';
 
 export function getGameNotificationData(dataEntries) {
     let notificationData = dataEntries.map(gameData => {
@@ -32,7 +33,7 @@ export function getGameNotificationData(dataEntries) {
     return notificationData
 }
 
-export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageId, channelID, discordToken) {
+export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, messageId, channelID, discordToken) {
     let gameDuration = `${Math.floor(postGameInfo.gameDuration / 60)}:${(postGameInfo.gameDuration % 60).toString().padStart(2, '0')}`;
     let gameVersion = postGameInfo.gameVersion.split('.').slice(0, 2).join('.');  
     
@@ -76,7 +77,7 @@ export async function sendPostGameUpdate(postGameInfo, postGameLadInfo, messageI
 
     } else {
         return discordAPI.channels.createThread(channelID,{
-            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName}'s Post Game Discussion`,
+            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
             auto_archive_duration: 1440,
         }, messageId).then(thread => {
             return discordAPI.channels.createMessage(thread.id, {
