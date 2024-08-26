@@ -21,18 +21,17 @@ async function sendGameInfoAlert(gameData, channelID, discAPI) {
     let gameDataToSend = []
     await Promise.all(gameData.map(async game => {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
-        ladDocRef.get().then(ladDoc => {
-            if (!ladDoc.exists) {
-                ladDocRef.set({
-                    gameId: game.gameId,
-                    champion: game.champion,
-                    gameType: game.gameType,
-                    sentPostGame: false
-                })
-                ladRefs.push(ladDocRef);
-                gameDataToSend.push(game);
-            } 
-        })
+        let ladDoc = await ladDocRef.get();
+        if (!ladDoc.exists) {
+            ladDocRef.set({
+                gameId: game.gameId,
+                champion: game.champion,
+                gameType: game.gameType,
+                sentPostGame: false
+            })
+            ladRefs.push(ladDocRef);
+            gameDataToSend.push(game);
+        }
     }));
 
     let apiMessage: void | APIMessage = await sendLeagueLadAlerts(gameDataToSend, channelID, discAPI);
