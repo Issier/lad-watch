@@ -53,7 +53,7 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
         let summInfo = await db.collection('summoner').where('summId', '==', summonerId).get();
         let puuid = summInfo.docs[0].data().puuid;
         let matchId = await fetchMostRecentMatchId(puuid, riotAPI);
-        if (!!matchId && matchId.split('_')[1] === gameData.gameId) {
+        if (!!matchId && matchId.split('_')[1] == gameData.gameId) {
             let postGameData = await fetchMostRecentCompletedGame(matchId, puuid, riotAPI);
             sendPostGameUpdate(
                 postGameData.matchData.info, 
