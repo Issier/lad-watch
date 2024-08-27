@@ -39,7 +39,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
     
     let position = `${postGameLadInfo?.teamPosition?.slice(0, 1)}${postGameLadInfo?.teamPosition?.toLowerCase()?.slice(1)}`
 
-    const rest = new REST({ version: '10', timeout: 20_000}).setToken(discordToken);
+    const rest = new REST({ version: '10', timeout: 30_000}).setToken(discordToken);
     const discordAPI = new API(rest);
 
     let content = `
