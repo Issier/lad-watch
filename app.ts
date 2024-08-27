@@ -1,7 +1,7 @@
 import { sendLeagueLadAlerts, getGameNotificationData, sendPostGameUpdate } from "./src/DiscordAPI.js";
 import { fetchLeagueLadGameData, fetchMostRecentCompletedGame } from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-import { Firestore } from "@google-cloud/firestore";
+import { DocumentData, DocumentSnapshot, Firestore } from "@google-cloud/firestore";
 import express from 'express';
 import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
@@ -19,26 +19,28 @@ const client = new SecretManagerServiceClient();
 async function sendGameInfoAlert(gameData, channelID, discAPI) {
     let ladRefs = []
     let gameDataToSend = []
-    await Promise.all(gameData.map(async game => {
+    await Promise.all(gameData.map(async (game): Promise<DocumentSnapshot<DocumentData, DocumentData>> => {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
-        let ladDoc = await ladDocRef.get();
-        if (!ladDoc.exists) {
-            ladDocRef.set({
-                gameId: game.gameId,
-                champion: game.champion,
-                gameType: game.gameType,
-                sentPostGame: false
-            })
-            ladRefs.push(ladDocRef);
-            gameDataToSend.push(game);
-        }
+        return ladDocRef.get().then(ladDoc => {
+            if (!ladDoc.exists) {
+                ladRefs.push(ladDocRef);
+                gameDataToSend.push(game);
+            }
+            return ladDoc;
+        });
     }));
 
     let apiMessage: void | APIMessage = await sendLeagueLadAlerts(gameDataToSend, channelID, discAPI);
 
-    for (const ladRef of ladRefs) {
-        if (apiMessage) {
-            ladRef.update({messageId: apiMessage.id});
+    if (apiMessage) {
+        for (let i = 0; i < ladRefs.length; i++) {
+            ladRefs[i].set({
+                gameId: gameDataToSend[i].gameId,
+                champion: gameDataToSend[i].champion,
+                gameType: gameDataToSend[i].gameType,
+                messageId: apiMessage.id,
+                sentPostGame: false
+            })
         }
     }
 }
