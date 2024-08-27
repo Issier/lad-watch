@@ -66,19 +66,21 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
         throw new Error('No Message ID provided for Post Game Update');
     }
 
-    const embed = new EmbedBuilder()
+    let embed = new EmbedBuilder()
         .setColor(postGameLadInfo?.win ? 0x00FF00 : 0xFF0000)
         .setTitle(`${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
-        .setDescription(content)
-        .setImage(`attachment://kill.png`)
-        .toJSON();
+        .setDescription(content);
+
+    if (killImage) {
+        embed = embed.setImage(`attachment://kill.png`);
+    }
 
     const message = await discordAPI.channels.getMessage(channelID, messageId);
 
     if (message.thread) {
         return discordAPI.channels.createMessage(message.thread.id, {
-            embeds: [embed],
-            files: [{contentType: 'image/png', data: killImage, name: 'kill.png'}]
+            embeds: [embed.toJSON()],
+            files: [killImage ? {contentType: 'image/png', data: killImage, name: 'kill.png'} : null].filter(Boolean)
         }).catch(error => {
             logger.log({
                 level: 'error',
@@ -92,8 +94,8 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
             auto_archive_duration: 1440,
         }, messageId).then(thread => {
             return discordAPI.channels.createMessage(thread.id, {
-                embeds: [embed],
-                files: [{contentType: 'image/png', data: killImage, name: 'kill.png'}]    
+                embeds: [embed.toJSON()],
+                files: [killImage ? {contentType: 'image/png', data: killImage, name: 'kill.png'} : null].filter(Boolean)    
             }).catch(error => {
                 logger.log({
                     level: 'error',

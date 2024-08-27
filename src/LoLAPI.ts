@@ -238,6 +238,9 @@ export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken)
             fetchKillImage(matchId, puuid, riotAPIToken)
         ]);
 
+        if (matchData.info.gameMode !== 'CLASSIC') {
+            return { matchData: matchData, killImage: null };
+        }
         return { matchData: matchData, killImage: killImage };
     } catch (error) {
         logger.log({
