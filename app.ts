@@ -1,5 +1,5 @@
-import { sendLeagueLadAlerts, getGameNotificationData, sendPostGameUpdate } from "./src/DiscordAPI.js";
-import { fetchLeagueLadGameData, fetchMostRecentCompletedGame } from "./src/LoLAPI.js";
+import { sendLeagueLadAlerts, sendPostGameUpdate } from "./src/DiscordAPI.js";
+import { fetchLeagueLadGameData, fetchMostRecentCompletedGame, fetchMostRecentMatchId } from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { DocumentData, DocumentSnapshot, Firestore } from "@google-cloud/firestore";
 import express from 'express';
@@ -52,11 +52,13 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
         let summonerId = game.ref.parent.parent.id;
         let summInfo = await db.collection('summoner').where('summId', '==', summonerId).get();
         let puuid = summInfo.docs[0].data().puuid;
-        let postGameData = await fetchMostRecentCompletedGame(puuid, riotAPI);
-        if (!!postGameData && postGameData.info.gameId === gameData.gameId) {
+        let matchId = await fetchMostRecentMatchId(puuid, riotAPI);
+        if (!!matchId && matchId.split('_')[1] === gameData.gameId) {
+            let postGameData = await fetchMostRecentCompletedGame(matchId, puuid, riotAPI);
             sendPostGameUpdate(
-                postGameData.info, 
-                postGameData.info.participants.find(participant => participant.summonerId === summonerId), 
+                postGameData.matchData.info, 
+                postGameData.matchData.info.participants.find(participant => participant.summonerId === summonerId), 
+                postGameData.killImage,
                 gameData.messageId, 
                 channelID, 
                 discAPI
@@ -65,10 +67,10 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
                     game.ref.update({sentPostGame: true, postGameUpdateId: message.id})
                 };
             });
-        } else if (!!postGameData) {
+        } else if (!!matchId) {
             logger.log({
                 level: 'info',
-                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${postGameData.info.gameId} vs ${gameData.gameId})`
+                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${matchId.split('_')[1]} vs ${gameData.gameId})`
             })
         } else {
             logger.log({

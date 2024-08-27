@@ -33,7 +33,7 @@ export function getGameNotificationData(dataEntries) {
     return notificationData
 }
 
-export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, messageId, channelID, discordToken) {
+export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, killImage: Buffer, messageId, channelID, discordToken) {
     let gameDuration = `${Math.floor(postGameInfo.gameDuration / 60)}:${(postGameInfo.gameDuration % 60).toString().padStart(2, '0')}`;
     let gameVersion = postGameInfo.gameVersion.split('.').slice(0, 2).join('.');  
     
@@ -66,11 +66,19 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
         throw new Error('No Message ID provided for Post Game Update');
     }
 
+    const embed = new EmbedBuilder()
+        .setColor(postGameLadInfo?.win ? 0x00FF00 : 0xFF0000)
+        .setTitle(`${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
+        .setDescription(content)
+        .setImage(`attachment://kill.png`)
+        .toJSON();
+
     const message = await discordAPI.channels.getMessage(channelID, messageId);
 
     if (message.thread) {
         return discordAPI.channels.createMessage(message.thread.id, {
-            content: content
+            embeds: [embed],
+            files: [{contentType: 'image/png', data: killImage, name: 'kill.png'}]
         }).catch(error => {
             logger.log({
                 level: 'error',
@@ -84,7 +92,8 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
             auto_archive_duration: 1440,
         }, messageId).then(thread => {
             return discordAPI.channels.createMessage(thread.id, {
-                content: content
+                embeds: [embed],
+                files: [{contentType: 'image/png', data: killImage, name: 'kill.png'}]    
             }).catch(error => {
                 logger.log({
                     level: 'error',
