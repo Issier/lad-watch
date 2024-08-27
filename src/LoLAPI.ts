@@ -32,13 +32,13 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     return puuidData.data();
 }
 
-async function fetchKillImage(matchData: RiotAPITypes.MatchV5.MatchDTO, puuid, riotAPIToken): Promise<Buffer> {
+async function fetchKillImage(matchId: string, puuid, riotAPIToken): Promise<Buffer> {
     const riotAPI = new RiotAPI(riotAPIToken);
 
     const SCALER = 512/16000;
 
     try {
-        const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({cluster: PlatformId.AMERICAS, matchId: matchData.metadata.matchId});
+        const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({cluster: PlatformId.AMERICAS, matchId: matchId});
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
         
         let frameWithPlayerEvent = timelineData.info.frames.map(frame => {
@@ -48,13 +48,13 @@ async function fetchKillImage(matchData: RiotAPITypes.MatchV5.MatchDTO, puuid, r
                     if (event.killerId === summonerParticipantId) {
                         logger.log({
                             level: 'info',
-                            message: `${matchData.metadata.matchId} Summoner ${puuid} killed ${event.victimId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
+                            message: `${matchId} Summoner ${puuid} killed ${event.victimId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
                         })
                         playerEvents.kills.push(event);
                     } else if (event.victimId === summonerParticipantId) {
                         logger.log({
                             level: 'info',
-                            message: `${matchData.metadata.matchId} Summoner ${puuid} was killed by ${event.killerId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
+                            message: `${matchId} Summoner ${puuid} was killed by ${event.killerId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
                         })
                         playerEvents.deaths.push(event);
                     }
@@ -103,7 +103,7 @@ async function fetchKillImage(matchData: RiotAPITypes.MatchV5.MatchDTO, puuid, r
     } catch (error) {
         logger.log({
             level: 'error',
-            message: `Failed to fetch timeline data for ${matchData.info.gameId}`
+            message: `Failed to fetch timeline data for ${matchId}`
         })
         return null;
     }
@@ -245,7 +245,7 @@ export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken)
     } catch (error) {
         logger.log({
             level: 'error',
-            message: `Failed to fetch most recent game data for ${puuid}`
+            message: `Failed to fetch most recent game data for ${puuid}, ${JSON.stringify(error)}`
         })
         return null;
     }
