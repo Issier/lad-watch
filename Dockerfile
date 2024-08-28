@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim
+FROM node:20-bookworm AS build
 
 WORKDIR /DiscBot/
 
@@ -9,6 +9,10 @@ COPY app.ts /DiscBot/
 COPY logger.ts /DiscBot/
 COPY src/ /DiscBot/src
 COPY tsconfig.json /DiscBot/
+RUN npm run build-prod
 
-EXPOSE 8080
-CMD ["npm", "start"]
+FROM gcr.io/distroless/nodejs20-debian12 AS production
+COPY --from=build /DiscBot/dist /usr/src/DiscBot
+COPY --from=build /DiscBot/node_modules /usr/src/DiscBot/node_modules
+WORKDIR /usr/src/DiscBot
+CMD ["app.js"]
