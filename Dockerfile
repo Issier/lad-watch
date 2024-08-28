@@ -11,8 +11,10 @@ COPY src/ /DiscBot/src
 COPY tsconfig.json /DiscBot/
 RUN npm run build-prod
 
-FROM gcr.io/distroless/nodejs20-debian12 AS production
+FROM node:20-bookworm-slim AS production
 COPY --from=build /DiscBot/dist /usr/src/DiscBot
 COPY --from=build /DiscBot/node_modules /usr/src/DiscBot/node_modules
+RUN apt-get update
+RUN apt-get install -y libcairo2-dev libpango1.0-dev libgif-dev librsvg2-dev
 WORKDIR /usr/src/DiscBot
 CMD ["app.js"]
