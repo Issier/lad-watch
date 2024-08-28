@@ -32,7 +32,15 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     return puuidData.data();
 }
 
-async function fetchKillImage(matchId: string, puuid, riotAPIToken): Promise<Buffer> {
+async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIToken): Promise<Buffer> {
+    if (!['ARAM', 'CLASSIC'].includes(gameMode)) {
+        logger.log({
+            level: 'info',
+            message: `Game mode ${gameMode} is not supported for kill image`
+        })
+        return null
+    }
+    
     const riotAPI = new RiotAPI(riotAPIToken);
 
     const SCALER = 512/16000;
@@ -70,7 +78,7 @@ async function fetchKillImage(matchId: string, puuid, riotAPIToken): Promise<Buf
 
         const map = await storage
             .bucket('league_data')
-            .file('map.png')
+            .file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png')
             .download();
 
         await loadImage(map[0]).then(image => {
@@ -233,14 +241,9 @@ export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken)
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const [matchData, killImage] = await Promise.all([
-            riotAPI.matchV5.getMatchById({cluster: PlatformId.AMERICAS, matchId: matchId}),
-            fetchKillImage(matchId, puuid, riotAPIToken)
-        ]);
+        const matchData: RiotAPITypes.MatchV5.MatchDTO = await riotAPI.matchV5.getMatchById({cluster: PlatformId.AMERICAS, matchId: matchId});
+        const killImage = await fetchKillImage(matchId, matchData.info.gameMode, puuid, riotAPIToken);
 
-        if (matchData.info.gameMode !== 'CLASSIC') {
-            return { matchData: matchData, killImage: null };
-        }
         return { matchData: matchData, killImage: killImage };
     } catch (error) {
         logger.log({
