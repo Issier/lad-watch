@@ -128,6 +128,10 @@ app.post('/', async (req, res) => {
     ]);
 
     leagueLadCheck(riotAPI, discAPI, channelID).then(() => {
+        logger.log({
+            level: 'info',
+            message: 'Completed Lad Run Check'
+        });
         res.status(204).send('Found Lads');
     });
 });
