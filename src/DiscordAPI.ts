@@ -33,7 +33,7 @@ export function getGameNotificationData(dataEntries) {
     return notificationData
 }
 
-export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, killImage: Buffer, messageId, channelID, discordToken) {
+export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, killImage: Promise<Buffer>, messageId, channelID, discordToken) {
     let gameDuration = `${Math.floor(postGameInfo.gameDuration / 60)}:${(postGameInfo.gameDuration % 60).toString().padStart(2, '0')}`;
     let gameVersion = postGameInfo.gameVersion.split('.').slice(0, 2).join('.');  
     
@@ -78,9 +78,10 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
     const message = await discordAPI.channels.getMessage(channelID, messageId);
 
     if (message.thread) {
+        const map: Buffer = await killImage;
         return discordAPI.channels.createMessage(message.thread.id, {
             embeds: [embed.toJSON()],
-            files: [killImage ? {contentType: 'image/png', data: killImage, name: 'kill.png'} : null].filter(Boolean)
+            files: [map ? {contentType: 'image/png', data: map, name: 'kill.png'} : null].filter(Boolean)
         }).catch(error => {
             logger.log({
                 level: 'error',
@@ -92,10 +93,11 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
         return discordAPI.channels.createThread(channelID,{
             name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
             auto_archive_duration: 1440,
-        }, messageId).then(thread => {
+        }, messageId).then(async thread => {
+            const map: Buffer = await killImage;
             return discordAPI.channels.createMessage(thread.id, {
                 embeds: [embed.toJSON()],
-                files: [killImage ? {contentType: 'image/png', data: killImage, name: 'kill.png'} : null].filter(Boolean)    
+                files: [killImage ? {contentType: 'image/png', data: map, name: 'kill.png'} : null].filter(Boolean)    
             }).catch(error => {
                 logger.log({
                     level: 'error',

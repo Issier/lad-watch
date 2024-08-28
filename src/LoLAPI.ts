@@ -237,12 +237,12 @@ export async function fetchMostRecentMatchId(puuid, riotAPIToken): Promise<strin
     }
 }
 
-export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken): Promise<{matchData: RiotAPITypes.MatchV5.MatchDTO, killImage: Buffer}> {
+export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken): Promise<{matchData: RiotAPITypes.MatchV5.MatchDTO, killImage: Promise<Buffer>}> {
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
         const matchData: RiotAPITypes.MatchV5.MatchDTO = await riotAPI.matchV5.getMatchById({cluster: PlatformId.AMERICAS, matchId: matchId});
-        const killImage = await fetchKillImage(matchId, matchData.info.gameMode, puuid, riotAPIToken);
+        const killImage = fetchKillImage(matchId, matchData.info.gameMode, puuid, riotAPIToken);
 
         return { matchData: matchData, killImage: killImage };
     } catch (error) {
