@@ -68,7 +68,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
 
     let embed = new EmbedBuilder()
         .setColor(postGameLadInfo?.win ? 0x00FF00 : 0xFF0000)
-        .setTitle(`${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
+        .setTitle(`[${postGameInfo.gameMode}] ${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
         .setDescription(content);
 
     if (killImage) {
