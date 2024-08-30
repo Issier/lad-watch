@@ -68,7 +68,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
 
     let embed = new EmbedBuilder()
         .setColor(postGameLadInfo?.win ? 0x00FF00 : 0xFF0000)
-        .setTitle(`[${postGameInfo.gameMode}] ${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
+        .setTitle(`${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`)
         .setDescription(content);
 
     if (killImage) {
@@ -91,7 +91,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
 
     } else {
         return discordAPI.channels.createThread(channelID,{
-            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
+            name: `[${postGameInfo.gameMode}]${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
             auto_archive_duration: 1440,
         }, messageId).then(async thread => {
             const map: Buffer = await killImage;
