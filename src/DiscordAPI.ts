@@ -26,10 +26,7 @@ export function getGameNotificationData(dataEntries) {
         }
     })
 
-    logger.log({
-        level: 'info',
-        message: `Notification Data: ${JSON.stringify(notificationData)}`
-    })
+    logger.info(`Notification Data: ${JSON.stringify(notificationData)}`)
 
     return notificationData
 }
@@ -58,10 +55,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
             ${postGameLadInfo?.pentaKills ? `⚔️ ${postGameLadInfo.pentaKills} Penta Kill${postGameLadInfo.pentaKills > 1 ? 's' : ''}` : ''}
     `;
 
-    logger.log({
-        level: 'info',
-        message: `Sending Post Game Update with Content: ${content}`
-    })
+    logger.info(`Sending Post Game Update with Content: ${content}`)
 
     if (!messageId) {
         throw new Error('No Message ID provided for Post Game Update');
@@ -84,10 +78,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
             embeds: [embed.toJSON()],
             files: [map ? { contentType: 'image/png', data: map, name: 'kill.png' } : null].filter(Boolean)
         }).catch(error => {
-            logger.log({
-                level: 'error',
-                message: `Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
-            })
+            logger.info(`Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
         });
 
     } else {
@@ -100,78 +91,70 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
                 embeds: [embed.toJSON()],
                 files: [killImage ? { contentType: 'image/png', data: map, name: 'kill.png' } : null].filter(Boolean)
             }).catch(error => {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
-                })
+                logger.error(`Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
             });
         }).catch(error => {
-            logger.log({
-                level: 'error',
-                message: `Failed to create thread for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`
-            })
+            logger.error(`Failed to create thread for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
         });
     }
 }
 
-export async function sendLeagueLadAlerts(dataEntries, channelID, discordToken) {
+export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channelID, discordToken) {
     const storage = new Storage();
 
-    let embeds: { [gameId: number]: {embed: EmbedBuilder, summonerName: string}[] } = {};
-    let images: { [gameId: number]: { contentType: string, data: Buffer, name: string }[] } = {};
+    let embeds: { embed: EmbedBuilder, summonerName: string }[] = [];
+    let images: { contentType: string, data: Buffer, name: string }[] = [];
     let summoners = [];
+    let sentRefs = [];
     let formattedGamesData = getGameNotificationData(dataEntries);
-    for (const formattedGameData of formattedGamesData) {
-        if (!embeds[formattedGameData.gameId]) {
-            embeds[formattedGameData.gameId] = [];
-        }
-        if (!images[formattedGameData.gameId]) {
-            images[formattedGameData.gameId] = [];
-        }
-        embeds[formattedGameData.gameId].push({
+    for (let i = 0; i < formattedGamesData.length; i++) {
+        const ladRefDoc = await ladDocRefs[i].get();
+        if (ladRefDoc.exists) continue;
+        else sentRefs.push(ladRefDoc);
+
+        embeds.push({
             embed: new EmbedBuilder()
-                .setColor(formattedGameData.rankColor)
-                .setTitle(formattedGameData.title)
-                .setDescription(formattedGameData.description)
-                .setThumbnail(formattedGameData.thumbnail)
-                .setFields(...formattedGameData.fields), 
-            summonerName: formattedGameData.summonerName
+                .setColor(formattedGamesData[i].rankColor)
+                .setTitle(formattedGamesData[i].title)
+                .setDescription(formattedGamesData[i].description)
+                .setThumbnail(formattedGamesData[i].thumbnail)
+                .setFields(...formattedGamesData[i].fields),
+            summonerName: formattedGamesData[i].summonerName
         });
+        summoners.push(formattedGamesData[i].summonerName);
 
         const champImage = await storage
             .bucket('lad-alert-champions')
-            .file(formattedGameData.champImagePath)
+            .file(formattedGamesData[i].champImagePath)
             .download()
+        images.push({ contentType: 'image/png', data: champImage[0], name: formattedGamesData[i].champImageFileName });
 
-        logger.log({
-            level: 'info',
-            message: `Loaded Discord Embed with Data: ${JSON.stringify(formattedGameData)} with image having byte length of ${champImage[0].byteOffset}`
-        })
-
-        images[formattedGameData.gameId].push({ contentType: 'image/png', data: champImage[0], name: formattedGameData.champImageFileName });
-        summoners.push(formattedGameData.summonerName);
+        logger.info(`Loaded Discord Embed with Data: ${JSON.stringify(formattedGamesData[i])} with image having byte length of ${champImage[0].byteOffset}`)
     }
+
+    if (embeds.length == 0)
+        return null;
 
     const rest = new REST({ version: '10', timeout: 20_000 }).setToken(discordToken);
     const discordAPI = new API(rest);
 
-    return await Promise.all(
-        Object.entries(embeds).map(async ([gameId, gameEmbeds]) => {
-            const message = await discordAPI.channels.createMessage(channelID, {
-                embeds: gameEmbeds.map(gameEmbed => gameEmbed.embed).map(embed => embed.toJSON()),
-                files: images[gameId],
-            }).catch(error => {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to send discord message for ${summoners.join(',')}, ${channelID}: ${JSON.stringify(error)}`
+    const message = await discordAPI.channels.createMessage(channelID, {
+        embeds: embeds.map(embed => embed.embed.toJSON()),
+        files: images,
+    }).then(message => {
+        if (message) {
+            for (let i = 0; i < sentRefs.length; i++) {
+                sentRefs[i].set({
+                    gameId: gameId,
+                    champion: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.champion,
+                    gameType: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.gameType,
+                    messageId: formattedGamesData.messageId,
+                    sentPostGame: false
                 })
-            });
-
-            if (message) {
-                return { [gameId]: { messageId: message.id, summonerNames: gameEmbeds.map(gameEmbeds => gameEmbeds.summonerName)} };
-            } else {
-                throw new Error('Failed to send message');
             }
-        })
-    );
+            return { messageId: message.id, summonerNames: summoners }; 
+        }
+    }).catch(error => {
+        logger.error(`Failed to send discord message for ${summoners.join(',')}, ${channelID}: ${JSON.stringify(error)}`)
+    })
 }

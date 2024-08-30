@@ -1,4 +1,4 @@
-import { sendLeagueLadAlerts, sendPostGameUpdate } from "./src/DiscordAPI.js";
+import { sendLeagueLadAlert, sendPostGameUpdate } from "./src/DiscordAPI.js";
 import { fetchLeagueLadGameData, fetchMostRecentCompletedGame, fetchMostRecentMatchId, LeagueLadGameData } from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { DocumentData, DocumentReference, DocumentSnapshot, Firestore } from "@google-cloud/firestore";
@@ -16,41 +16,18 @@ const db = new Firestore({
 const client = new SecretManagerServiceClient();
 
 async function sendGameInfoAlert(gameData: LeagueLadGameData[], channelID, discAPI) {
-    let ladRefs: { [gameId: string]: {docRef: DocumentReference<DocumentData, DocumentData>, summonerName: string }[]} = {}
-    let gameDataToSend: { [gameId: string]: LeagueLadGameData[] } = {}
-    await Promise.all(gameData.map(async (game): Promise<DocumentSnapshot<DocumentData, DocumentData>> => {
+    let ladRefs: { [gameId: string]: {docRef: DocumentReference<DocumentData, DocumentData>, summonerName: string, gameData: LeagueLadGameData}[]} = {}
+
+    gameData.forEach((game) => {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
-        return ladDocRef.get().then(ladDoc => {
-            if (!ladDoc.exists) {
-                Object.keys(ladRefs).includes(game.gameId.toString()) ?
-                    ladRefs[game.gameId].push({docRef: ladDocRef, summonerName: game.summonerName}) :
-                    ladRefs[game.gameId] = [{docRef: ladDocRef, summonerName: game.summonerName}];
+        Object.keys(ladRefs).includes(game.gameId.toString()) ?
+            ladRefs[game.gameId].push({docRef: ladDocRef, summonerName: game.summonerName, gameData: game}) :
+            ladRefs[game.gameId] = [{docRef: ladDocRef, summonerName: game.summonerName, gameData: game}];
+    });
 
-                Object.keys(gameDataToSend).includes(game.gameId.toString()) ?
-                    gameDataToSend[game.gameId].push(game) :
-                    gameDataToSend[game.gameId] = [game];
-            }
-            return ladDoc;
-        });
-    }));
-
-    let apiMessage: { [gameId: string]: {messageId: string, summonerNames: string[]} }[] = await sendLeagueLadAlerts(Object.values(gameDataToSend).flat(), channelID, discAPI);
-
-    if (apiMessage) {
-        for (const sentGame of apiMessage) {
-            for (const gameId of Object.keys(sentGame)) {
-                for(const player of sentGame[gameId].summonerNames) {
-                    ladRefs[gameId].find(ladRef => ladRef.summonerName === player).docRef.set({
-                        gameId: gameId,
-                        champion: gameDataToSend[gameId].find(game => game.summonerName === player).champion,
-                        gameType: gameDataToSend[gameId].find(game => game.summonerName === player).gameType,
-                        messageId: sentGame[gameId].messageId,
-                        sentPostGame: false
-                    })
-                }
-            }
-        }
-    }
+    return (await Promise.all(Object.keys(ladRefs).map(game => {
+        return sendLeagueLadAlert(game, ladRefs[game].map(ref => ref.gameData), ladRefs[game].map(ref => ref.docRef), channelID, discAPI) 
+    }))).filter((message) => !!message);
 }
 
 async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
@@ -76,15 +53,9 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
                 };
             });
         } else if (!!matchId) {
-            logger.log({
-                level: 'info',
-                message: `${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${matchId.split('_')[1]} vs ${gameData.gameId})`
-            })
+            logger.info(`${summInfo.docs[0].data().gameName} has a new game, but it is not the most recent game (${matchId.split('_')[1]} vs ${gameData.gameId})`)
         } else {
-            logger.log({
-                level: 'info',
-                message: `No Post Game for ${summonerId}`
-            })
+            logger.info(`No Post Game for ${summonerId}`)
         }
     });
 }
@@ -93,53 +64,45 @@ export async function leagueLadCheck(riotAPI, discAPI, channelID) {
     const lads = await downloadAsJson('league_data', 'lads.json');
 
     let activeGames = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotAPI)))).filter(gameData => !!gameData);
-    logger.log({ level: 'info', message: JSON.stringify(activeGames) });
-    sendGameInfoAlert(activeGames, channelID, discAPI),
-    sendPostGameUpdateAlerts(riotAPI, discAPI, channelID)
- }
+    logger.info(JSON.stringify(activeGames));
+    return await Promise.all([
+        sendGameInfoAlert(activeGames, channelID, discAPI),
+        sendPostGameUpdateAlerts(riotAPI, discAPI, channelID)
+    ])
+}
 
 const app = express();
 app.use(express.json())
 
 const port = parseInt(process.env.PORT) || 8080;
 app.listen(port, () => {
-    logger.log({
-        level: 'info',
-        message: 'LadWatch listening'
-    })
+    logger.info('LadWatch listening')
 })
 
 app.post('/', async (req, res) => {
     if (!req.body) {
         const msg = 'no Pub/Sub message received';
-        logger.log({
-            level: 'error',
-            message: `${msg} ${req.body}`
-        });
+        logger.info(`${msg} ${req.body}`);
         res.status(400).send(`Bad Request: ${msg}`);
         return;
     }
     if (!req.body.message) {
         const msg = 'invalid Pub/Sub message format';
-        logger.log({
-            level: 'error',
-            message: `${msg} ${req.body}`
-        });
+        logger.info(`${msg} ${req.body}`);
         res.status(400).send(`Bad Request: ${msg}`);
         return;
     }
 
+    logger.info("Loading Secrets")
     const [riotAPI, discAPI, channelID] = await Promise.all([
         getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/RIOT_TOKEN/versions/latest' })),
         getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/DISCORD_TOKEN/versions/latest' })),
         getSecretVal(client.accessSecretVersion({ name: 'projects/lad-alert/secrets/CHANNEL_ID/versions/latest' }))
     ]);
 
+    logger.info("Beginning League Lad Check")
     leagueLadCheck(riotAPI, discAPI, channelID).then(() => {
-        logger.log({
-            level: 'info',
-            message: 'Completed Lad Run Check'
-        });
+        logger.info('Completed Lad Run Check');
         res.status(204).send('Found Lads');
     });
 });

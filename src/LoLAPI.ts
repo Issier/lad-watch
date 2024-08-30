@@ -30,10 +30,7 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const puuidDoc = db.collection('summoner').doc(ladName);
     const puuidData = await puuidDoc.get();
     if (!puuidData.exists) {
-        logger.log({
-            level: 'info',
-            message: `Summoner ${ladName}#${ladTag} with not found in cache`
-        })
+        logger.info(`Summoner ${ladName}#${ladTag} with not found in cache`)
         let riotInfo: RiotAPITypes.Account.AccountDTO = await riotAPI.account.getByRiotId({region: PlatformId.AMERICAS, gameName: ladName, tagLine: ladTag});
         let summInfo: RiotAPITypes.Summoner.SummonerDTO = await riotAPI.summoner.getByPUUID({region: PlatformId.NA1, puuid: riotInfo.puuid});
 
@@ -47,38 +44,70 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     return puuidData.data();
 }
 
+async function createMapImage(gameMode: string, framesWithPlayerEvent: {kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number}[]) {
+    const SCALER = 512/16000;
+    const canvas = createCanvas(512, 512);
+    const ctx = canvas.getContext('2d');
+
+    const storage = new Storage();
+
+    const map = await storage
+        .bucket('league_data')
+        .file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png')
+        .download();
+
+    loadImage(map[0]).then(image => {
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    });
+
+    ctx.translate(0,canvas.height);
+    ctx.scale(1,-1); 
+
+    for (const event of framesWithPlayerEvent) {
+        for (const kill of event.kills) {
+            ctx.beginPath();
+            ctx.fillStyle = '#00A36C';
+            let killX = (kill.position.x * SCALER)
+            ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fill();
+        }
+        for (const death of event.deaths) {
+            ctx.beginPath();
+            ctx.fillStyle = '#EE4B2B';
+            let deathX = (death.position.x * SCALER)
+            ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fill();
+        }
+    }
+
+    return canvas.toBuffer();
+}
+
 async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIToken): Promise<Buffer> {
     if (!['ARAM', 'CLASSIC'].includes(gameMode)) {
-        logger.log({
-            level: 'info',
-            message: `Game mode ${gameMode} is not supported for kill image`
-        })
+        logger.info(`Game mode ${gameMode} is not supported for kill image`)
         return null
     }
     
     const riotAPI = new RiotAPI(riotAPIToken);
 
-    const SCALER = 512/16000;
-
     try {
         const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({cluster: PlatformId.AMERICAS, matchId: matchId});
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
         
-        let frameWithPlayerEvent = timelineData.info.frames.map(frame => {
+        let framesWithPlayerEvent = timelineData.info.frames.map(frame => {
             let playerEvents = {kills: [], deaths: [], timestamp: frame.timestamp};
             frame.events.forEach(event => {
                 if (event.type === 'CHAMPION_KILL') {
                     if (event.killerId === summonerParticipantId) {
-                        logger.log({
-                            level: 'info',
-                            message: `${matchId} Summoner ${puuid} killed ${event.victimId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
-                        })
+                        logger.info(`${matchId} Summoner ${puuid} killed ${event.victimId} at (${event.position.x}, ${event.position.y})`)
                         playerEvents.kills.push(event);
                     } else if (event.victimId === summonerParticipantId) {
-                        logger.log({
-                            level: 'info',
-                            message: `${matchId} Summoner ${puuid} was killed by ${event.killerId} at ${event.position.x} (Scaled ${event.position.x * SCALER}), ${event.position.y} (Scaled ${event.position.y * SCALER})`
-                        })
+                        logger.info(`${matchId} Summoner ${puuid} was killed by ${event.killerId} at (${event.position.x}, ${event.position.y})`)
                         playerEvents.deaths.push(event);
                     }
                 }
@@ -86,50 +115,9 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
             return playerEvents;
         });
 
-        const canvas = createCanvas(512, 512);
-        const ctx = canvas.getContext('2d');
-
-        const storage = new Storage();
-
-        const map = await storage
-            .bucket('league_data')
-            .file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png')
-            .download();
-
-        await loadImage(map[0]).then(image => {
-            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        });
-
-        ctx.translate(0,canvas.height);
-        ctx.scale(1,-1); 
-
-        for (const event of frameWithPlayerEvent) {
-            for (const kill of event.kills) {
-                ctx.beginPath();
-                ctx.fillStyle = '#00A36C';
-                let killX = (kill.position.x * SCALER)
-                ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fill();
-            }
-            for (const death of event.deaths) {
-                ctx.beginPath();
-                ctx.fillStyle = '#EE4B2B';
-                let deathX = (death.position.x * SCALER)
-                ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fill();
-            }
-        }
-
-        return canvas.toBuffer();
+       return await createMapImage(gameMode, framesWithPlayerEvent); 
     } catch (error) {
-        logger.log({
-            level: 'error',
-            message: `Failed to fetch timeline data for ${matchId}`
-        })
+        logger.error(`Failed to fetch timeline data for ${matchId}`)
         return null;
     }
 }
@@ -154,34 +142,22 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
         const riotAPI = new RiotAPI(riotAPIToken);
         /* Riot games account info */
         const riotInfo = await getRiotInfoWithCache(ladName, ladTag, riotAPIToken).catch(error => {
-            logger.log({
-                level: 'error',
-                message: `Failed to fetch riot info for ${ladName}#${ladTag}: ${JSON.stringify(error)}}`
-            })
+            logger.error(`Failed to fetch riot info for ${ladName}#${ladTag}: ${JSON.stringify(error)}}`)
             throw error;
         });
 
-        logger.log({
-            level: 'info',
-            message: `Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`
-        })
-        /* Summoner Ranked Data */
-        const rankData: RiotAPITypes.League.LeagueEntryDTO = (await riotAPI
-            .league
-            .getEntriesBySummonerId({
-                region: PlatformId.NA1, 
-                summonerId: riotInfo.summId
-            }).catch(error => {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to fetch rank data: ${JSON.stringify(error)}}`
-                })
-                throw error;
-            })).filter(data => data.queueType === 'RANKED_SOLO_5x5')[0];
-
-        /* Live Game Data */
-        logger.info(`Fetching live game data for ${ladName}#${ladTag}, ${riotInfo.summId}`)
-        let liveGame: RiotAPITypes.Spectator.CurrentGameInfoDTO = await riotAPI
+        logger.info(`Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`)
+        const [rankData, liveGame] = await Promise.all([
+            riotAPI
+                .league
+                .getEntriesBySummonerId({
+                    region: PlatformId.NA1, 
+                    summonerId: riotInfo.summId
+                }).catch(error => {
+                    logger.error(`Failed to fetch rank data: ${JSON.stringify(error)}}`)
+                    throw error;
+                }).then((data) => data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]),
+            riotAPI
             .spectator
             .getBySummonerId({
                 region: PlatformId.NA1, 
@@ -190,12 +166,10 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
                 logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
                 return value;
             }).catch(error => {
-                logger.log({
-                    level: 'error',
-                    message: `Failed to fetch live game data: ${JSON.stringify(error)}}`
-                })
+                logger.error(`Failed to fetch live game data: ${JSON.stringify(error)}}`)
                 throw error;
-            });
+            }) 
+        ]);
         
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
@@ -229,10 +203,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
         }
     } catch (error) {
         if (error?.response && error.response.status < 500) {
-            logger.log({
-                level: 'error',
-                message: `Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`
-            })
+            logger.error(`Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`)
         }
         return undefined;
     }
@@ -246,10 +217,7 @@ export async function fetchMostRecentMatchId(puuid, riotAPIToken): Promise<strin
 
         return matchList[0];
     } catch (error) {
-        logger.log({
-            level: 'error',
-            message: `Failed to fetch most recent game data for ${puuid}`
-        })
+        logger.error(`Failed to fetch most recent game data for ${puuid}`)
         return null;
     }
 }
@@ -263,10 +231,7 @@ export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken)
 
         return { matchData: matchData, killImage: killImage };
     } catch (error) {
-        logger.log({
-            level: 'error',
-            message: `Failed to fetch most recent game data for ${puuid}, ${JSON.stringify(error)}`
-        })
+        logger.error(`Failed to fetch most recent game data for ${puuid}, ${JSON.stringify(error)}`)
         return null;
     }
 }
