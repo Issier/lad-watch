@@ -92,7 +92,7 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
 
     } else {
         return discordAPI.channels.createThread(channelID, {
-            name: `[${postGameInfo.gameMode}]${postGameLadInfo?.win ? '🟩' : '🟥'} ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
+            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} [${postGameInfo.gameMode}] ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
             auto_archive_duration: 1440,
         }, messageId).then(async thread => {
             const map: Buffer = await killImage;
