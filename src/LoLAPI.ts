@@ -107,7 +107,8 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
             for (const kill of event.kills) {
                 ctx.beginPath();
                 ctx.fillStyle = '#00A36C';
-                ctx.arc((kill.position.x * SCALER) + 25, kill.position.y * SCALER, 10, 0, 2 * Math.PI);
+                let killX = (kill.position.x * SCALER)
+                ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
                 ctx.lineWidth = 2;
                 ctx.stroke();
                 ctx.fill();
@@ -115,7 +116,8 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
             for (const death of event.deaths) {
                 ctx.beginPath();
                 ctx.fillStyle = '#EE4B2B';
-                ctx.arc((death.position.x * SCALER) + 25, death.position.y * SCALER, 10, 0, 2 * Math.PI);
+                let deathX = (death.position.x * SCALER)
+                ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
                 ctx.lineWidth = 2;
                 ctx.stroke();
                 ctx.fill();
