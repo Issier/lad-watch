@@ -122,7 +122,7 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
     for (let i = 0; i < formattedGamesData.length; i++) {
         const ladRefDoc = await ladDocRefs[i].get();
         if (ladRefDoc.exists) continue;
-        else sentRefs.push(ladRefDoc);
+        else sentRefs.push(ladDocRefs[i]);
 
         embeds.push({
             embed: new EmbedBuilder()

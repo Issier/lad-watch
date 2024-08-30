@@ -56,35 +56,33 @@ async function createMapImage(gameMode: string, framesWithPlayerEvent: { kills: 
         .file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png')
         .download();
 
-    loadImage(map[0]).then(image => {
+    return loadImage(map[0]).then(image => {
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        ctx.translate(0, canvas.height);
+        ctx.scale(1, -1);
+
+        for (const event of framesWithPlayerEvent) {
+            for (const kill of event.kills) {
+                ctx.beginPath();
+                ctx.fillStyle = '#00A36C';
+                let killX = (kill.position.x * SCALER)
+                ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fill();
+            }
+            for (const death of event.deaths) {
+                ctx.beginPath();
+                ctx.fillStyle = '#EE4B2B';
+                let deathX = (death.position.x * SCALER)
+                ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fill();
+            }
+        }
+        return canvas.toBuffer();
     });
-
-    ctx.translate(0, canvas.height);
-    ctx.scale(1, -1);
-
-    for (const event of framesWithPlayerEvent) {
-        for (const kill of event.kills) {
-            ctx.beginPath();
-            ctx.fillStyle = '#00A36C';
-            let killX = (kill.position.x * SCALER)
-            ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fill();
-        }
-        for (const death of event.deaths) {
-            ctx.beginPath();
-            ctx.fillStyle = '#EE4B2B';
-            let deathX = (death.position.x * SCALER)
-            ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fill();
-        }
-    }
-
-    return canvas.toBuffer();
 }
 
 async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIToken): Promise<Buffer> {
