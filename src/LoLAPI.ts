@@ -2,7 +2,7 @@ import { RiotAPI, RiotAPITypes, PlatformId } from "@fightmegg/riot-api";
 import { Firestore } from "@google-cloud/firestore";
 import { downloadAsJson } from './utilities.js';
 import { logger } from '../logger.js';
-import { createCanvas, loadImage } from "canvas";
+import { Canvas, createCanvas, loadImage, CanvasRenderingContext2D } from "canvas";
 import { Storage } from "@google-cloud/storage";
 
 export type LeagueLadGameData = {
@@ -44,41 +44,33 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     return puuidData.data();
 }
 
-async function createMapImage(gameMode: string, framesWithPlayerEvent: { kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number }[]) {
+function drawCircle(ctx: CanvasRenderingContext2D, color: string, x: number, y: number) {
     const SCALER = 512 / 16000;
-    const canvas = createCanvas(512, 512);
-    const ctx = canvas.getContext('2d');
 
-    const storage = new Storage();
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    let scaledX = (x * SCALER)
+    ctx.arc(scaledX + (scaledX < 256 ? 0 : 25), y * SCALER, 10, 0, 2 * Math.PI);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fill(); 
+}
 
-    const map = await storage
-        .bucket('league_data')
-        .file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png')
-        .download();
+async function paintMap(mapImage: any,framesWithPlayerEvent: { kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number }[]) {
+    const canvas: Canvas = createCanvas(512, 512);
+    const ctx: CanvasRenderingContext2D = canvas.getContext('2d');
 
-    return loadImage(map[0]).then(image => {
+    return loadImage(mapImage).then(image => {
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
         ctx.translate(0, canvas.height);
         ctx.scale(1, -1);
 
         for (const event of framesWithPlayerEvent) {
             for (const kill of event.kills) {
-                ctx.beginPath();
-                ctx.fillStyle = '#00A36C';
-                let killX = (kill.position.x * SCALER)
-                ctx.arc(killX + (killX < 256 ? 0 : 25), kill.position.y * SCALER, 10, 0, 2 * Math.PI);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fill();
+                drawCircle(ctx,'#00A36C',kill.position.x, kill.position.y)
             }
             for (const death of event.deaths) {
-                ctx.beginPath();
-                ctx.fillStyle = '#EE4B2B';
-                let deathX = (death.position.x * SCALER)
-                ctx.arc(deathX + (deathX < 256 ? 0 : 25), death.position.y * SCALER, 10, 0, 2 * Math.PI);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fill();
+                drawCircle(ctx,'#EE4B2B',death.position.x, death.position.y)
             }
         }
         return canvas.toBuffer();
@@ -94,12 +86,16 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId });
+        const storage = new Storage();
+        const [mapImage, timelineData] = await Promise.all([
+            storage.bucket('league_data').file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png').download(),
+            riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId }) 
+        ]);
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
 
         let framesWithPlayerEvent = timelineData.info.frames.map(frame => {
             let playerEvents = { kills: [], deaths: [], timestamp: frame.timestamp };
-            frame.events.forEach(event => {
+            frame.events.forEach((event: RiotAPITypes.MatchV5.EventDTO) => {
                 if (event.type === 'CHAMPION_KILL') {
                     if (event.killerId === summonerParticipantId) {
                         logger.info(`${matchId} Summoner ${puuid} killed ${event.victimId} at (${event.position.x}, ${event.position.y})`)
@@ -113,7 +109,7 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
             return playerEvents;
         });
 
-        return await createMapImage(gameMode, framesWithPlayerEvent);
+        return await paintMap(mapImage[0], framesWithPlayerEvent);
     } catch (error) {
         logger.error(`Failed to fetch timeline data for ${matchId}`)
         return null;
