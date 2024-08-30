@@ -7,7 +7,7 @@ import { Storage } from "@google-cloud/storage";
 
 export type LeagueLadGameData = {
     gameTime: string,
-    champion: string, 
+    champion: string,
     summonerId: string,
     summonerName: string,
     summonerRank: string,
@@ -18,7 +18,7 @@ export type LeagueLadGameData = {
     hotStreak: boolean,
     seasonWins: number,
     seasonLosses: number
- }
+}
 
 export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const db = new Firestore({
@@ -31,21 +31,21 @@ export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const puuidData = await puuidDoc.get();
     if (!puuidData.exists) {
         logger.info(`Summoner ${ladName}#${ladTag} with not found in cache`)
-        let riotInfo: RiotAPITypes.Account.AccountDTO = await riotAPI.account.getByRiotId({region: PlatformId.AMERICAS, gameName: ladName, tagLine: ladTag});
-        let summInfo: RiotAPITypes.Summoner.SummonerDTO = await riotAPI.summoner.getByPUUID({region: PlatformId.NA1, puuid: riotInfo.puuid});
+        let riotInfo: RiotAPITypes.Account.AccountDTO = await riotAPI.account.getByRiotId({ region: PlatformId.AMERICAS, gameName: ladName, tagLine: ladTag });
+        let summInfo: RiotAPITypes.Summoner.SummonerDTO = await riotAPI.summoner.getByPUUID({ region: PlatformId.NA1, puuid: riotInfo.puuid });
 
         puuidDoc.set({
             gameName: ladName,
             puuid: riotInfo.puuid,
             summId: summInfo.id
         })
-        return {puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id}
+        return { puuid: riotInfo.puuid, gameName: ladName, summId: summInfo.id }
     }
     return puuidData.data();
 }
 
-async function createMapImage(gameMode: string, framesWithPlayerEvent: {kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number}[]) {
-    const SCALER = 512/16000;
+async function createMapImage(gameMode: string, framesWithPlayerEvent: { kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number }[]) {
+    const SCALER = 512 / 16000;
     const canvas = createCanvas(512, 512);
     const ctx = canvas.getContext('2d');
 
@@ -60,8 +60,8 @@ async function createMapImage(gameMode: string, framesWithPlayerEvent: {kills: R
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     });
 
-    ctx.translate(0,canvas.height);
-    ctx.scale(1,-1); 
+    ctx.translate(0, canvas.height);
+    ctx.scale(1, -1);
 
     for (const event of framesWithPlayerEvent) {
         for (const kill of event.kills) {
@@ -92,15 +92,15 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
         logger.info(`Game mode ${gameMode} is not supported for kill image`)
         return null
     }
-    
+
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({cluster: PlatformId.AMERICAS, matchId: matchId});
+        const timelineData: RiotAPITypes.MatchV5.MatchTimelineDTO = await riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId });
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
-        
+
         let framesWithPlayerEvent = timelineData.info.frames.map(frame => {
-            let playerEvents = {kills: [], deaths: [], timestamp: frame.timestamp};
+            let playerEvents = { kills: [], deaths: [], timestamp: frame.timestamp };
             frame.events.forEach(event => {
                 if (event.type === 'CHAMPION_KILL') {
                     if (event.killerId === summonerParticipantId) {
@@ -115,7 +115,7 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
             return playerEvents;
         });
 
-       return await createMapImage(gameMode, framesWithPlayerEvent); 
+        return await createMapImage(gameMode, framesWithPlayerEvent);
     } catch (error) {
         logger.error(`Failed to fetch timeline data for ${matchId}`)
         return null;
@@ -151,26 +151,28 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
             riotAPI
                 .league
                 .getEntriesBySummonerId({
-                    region: PlatformId.NA1, 
+                    region: PlatformId.NA1,
                     summonerId: riotInfo.summId
                 }).catch(error => {
                     logger.error(`Failed to fetch rank data: ${JSON.stringify(error)}}`)
                     throw error;
                 }).then((data) => data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]),
             riotAPI
-            .spectator
-            .getBySummonerId({
-                region: PlatformId.NA1, 
-                summonerId: riotInfo.puuid
-            }).then(value => {
-                logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
-                return value;
-            }).catch(error => {
-                logger.error(`Failed to fetch live game data: ${JSON.stringify(error)}}`)
-                throw error;
-            }) 
+                .spectator
+                .getBySummonerId({
+                    region: PlatformId.NA1,
+                    summonerId: riotInfo.puuid
+                }).then(value => {
+                    logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
+                    return value;
+                }).catch(error => {
+                    logger.info(`Summoner ${riotInfo.gameName} is not in a game`);
+                    return null;
+                })
         ]);
-        
+
+        if (!liveGame) return;
+
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
         const summChar = liveGame.participants.filter(participant => {
@@ -188,12 +190,12 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
 
         return {
             gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
-            champion: champion, 
+            champion: champion,
             summonerId: riotInfo.summId,
             summonerName: riotInfo.gameName,
             summonerRank: !rankData ? 'Unranked' : `${rankData.tier} ${rankData.rank} ${rankData.leaguePoints}LP`,
-            liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +  
-                        `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
+            liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +
+                `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
             gameType: gameType.description.replace(' games', ''),
             rankColorHex: rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
             gameId: liveGame.gameId,
@@ -213,7 +215,7 @@ export async function fetchMostRecentMatchId(puuid, riotAPIToken): Promise<strin
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const matchList = (await riotAPI.matchV5.getIdsByPuuid({cluster: PlatformId.AMERICAS, puuid: puuid, params: {start: 0, count: 1}}));        
+        const matchList = (await riotAPI.matchV5.getIdsByPuuid({ cluster: PlatformId.AMERICAS, puuid: puuid, params: { start: 0, count: 1 } }));
 
         return matchList[0];
     } catch (error) {
@@ -222,11 +224,11 @@ export async function fetchMostRecentMatchId(puuid, riotAPIToken): Promise<strin
     }
 }
 
-export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken): Promise<{matchData: RiotAPITypes.MatchV5.MatchDTO, killImage: Promise<Buffer>}> {
+export async function fetchMostRecentCompletedGame(matchId, puuid, riotAPIToken): Promise<{ matchData: RiotAPITypes.MatchV5.MatchDTO, killImage: Promise<Buffer> }> {
     const riotAPI = new RiotAPI(riotAPIToken);
 
     try {
-        const matchData: RiotAPITypes.MatchV5.MatchDTO = await riotAPI.matchV5.getMatchById({cluster: PlatformId.AMERICAS, matchId: matchId});
+        const matchData: RiotAPITypes.MatchV5.MatchDTO = await riotAPI.matchV5.getMatchById({ cluster: PlatformId.AMERICAS, matchId: matchId });
         const killImage = fetchKillImage(matchId, matchData.info.gameMode, puuid, riotAPIToken);
 
         return { matchData: matchData, killImage: killImage };
