@@ -141,20 +141,20 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
     const message = await discordAPI.channels.createMessage(channelID, {
         embeds: embeds.map(embed => embed.embed.toJSON()),
         files: images,
-    }).then(message => {
-        if (message) {
-            for (let i = 0; i < sentRefs.length; i++) {
-                sentRefs[i].set({
-                    gameId: gameId,
-                    champion: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.champion,
-                    gameType: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.gameType,
-                    messageId: formattedGamesData.messageId,
-                    sentPostGame: false
-                })
-            }
-            return { messageId: message.id, summonerNames: summoners }; 
-        }
     }).catch(error => {
         logger.error(`Failed to send discord message for ${summoners.join(',')}, ${channelID}: ${JSON.stringify(error)}`)
     })
+
+    if (message) {
+        for (let i = 0; i < sentRefs.length; i++) {
+            sentRefs[i].set({
+                gameId: gameId,
+                champion: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.champion,
+                gameType: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.gameType,
+                messageId: formattedGamesData.messageId,
+                sentPostGame: false
+            })
+        }
+        return { messageId: message.id, summonerNames: summoners }; 
+    }
 }
