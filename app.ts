@@ -1,11 +1,10 @@
 import { sendLeagueLadAlerts, sendPostGameUpdate } from "./src/DiscordAPI.js";
-import { fetchLeagueLadGameData, fetchMostRecentCompletedGame, fetchMostRecentMatchId } from "./src/LoLAPI.js";
+import { fetchLeagueLadGameData, fetchMostRecentCompletedGame, fetchMostRecentMatchId, LeagueLadGameData } from "./src/LoLAPI.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-import { DocumentData, DocumentSnapshot, Firestore } from "@google-cloud/firestore";
+import { DocumentData, DocumentReference, DocumentSnapshot, Firestore } from "@google-cloud/firestore";
 import express from 'express';
 import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
-import { APIMessage } from "@discordjs/core";
 
 async function getSecretVal(secret): Promise<string> {
     return (await secret)[0].payload.data.toString();
@@ -16,31 +15,40 @@ const db = new Firestore({
 })
 const client = new SecretManagerServiceClient();
 
-async function sendGameInfoAlert(gameData, channelID, discAPI) {
-    let ladRefs = []
-    let gameDataToSend = []
+async function sendGameInfoAlert(gameData: LeagueLadGameData[], channelID, discAPI) {
+    let ladRefs: { [gameId: string]: {docRef: DocumentReference<DocumentData, DocumentData>, summonerName: string }[]} = {}
+    let gameDataToSend: { [gameId: string]: LeagueLadGameData[] } = {}
     await Promise.all(gameData.map(async (game): Promise<DocumentSnapshot<DocumentData, DocumentData>> => {
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
         return ladDocRef.get().then(ladDoc => {
             if (!ladDoc.exists) {
-                ladRefs.push(ladDocRef);
-                gameDataToSend.push(game);
+                Object.keys(ladRefs).includes(game.gameId.toString()) ?
+                    ladRefs[game.gameId].push({docRef: ladDocRef, summonerName: game.summonerName}) :
+                    ladRefs[game.gameId] = [{docRef: ladDocRef, summonerName: game.summonerName}];
+
+                Object.keys(gameDataToSend).includes(game.gameId.toString()) ?
+                    gameDataToSend[game.gameId].push(game) :
+                    gameDataToSend[game.gameId] = [game];
             }
             return ladDoc;
         });
     }));
 
-    let apiMessage: void | APIMessage = await sendLeagueLadAlerts(gameDataToSend, channelID, discAPI);
+    let apiMessage: { [gameId: string]: {messageId: string, summonerNames: string[]} }[] = await sendLeagueLadAlerts(Object.values(gameDataToSend).flat(), channelID, discAPI);
 
     if (apiMessage) {
-        for (let i = 0; i < ladRefs.length; i++) {
-            ladRefs[i].set({
-                gameId: gameDataToSend[i].gameId,
-                champion: gameDataToSend[i].champion,
-                gameType: gameDataToSend[i].gameType,
-                messageId: apiMessage.id,
-                sentPostGame: false
-            })
+        for (const sentGame of apiMessage) {
+            for (const gameId of Object.keys(sentGame)) {
+                for(const player of sentGame[gameId].summonerNames) {
+                    ladRefs[gameId].find(ladRef => ladRef.summonerName === player).docRef.set({
+                        gameId: gameId,
+                        champion: gameDataToSend[gameId].find(game => game.summonerName === player).champion,
+                        gameType: gameDataToSend[gameId].find(game => game.summonerName === player).gameType,
+                        messageId: sentGame[gameId].messageId,
+                        sentPostGame: false
+                    })
+                }
+            }
         }
     }
 }
@@ -88,7 +96,7 @@ export async function leagueLadCheck(riotAPI, discAPI, channelID) {
     logger.log({ level: 'info', message: JSON.stringify(activeGames) });
     sendGameInfoAlert(activeGames, channelID, discAPI),
     sendPostGameUpdateAlerts(riotAPI, discAPI, channelID)
-}
+ }
 
 const app = express();
 app.use(express.json())

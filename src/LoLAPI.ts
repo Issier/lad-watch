@@ -5,6 +5,21 @@ import { logger } from '../logger.js';
 import { createCanvas, loadImage } from "canvas";
 import { Storage } from "@google-cloud/storage";
 
+export type LeagueLadGameData = {
+    gameTime: string,
+    champion: string, 
+    summonerId: string,
+    summonerName: string,
+    summonerRank: string,
+    liveGamePages: string,
+    gameType: string,
+    rankColorHex: string,
+    gameId: number,
+    hotStreak: boolean,
+    seasonWins: number,
+    seasonLosses: number
+ }
+
 export async function getRiotInfoWithCache(ladName, ladTag, riotAPIToken) {
     const db = new Firestore({
         projectId: 'lad-alert'
@@ -117,7 +132,7 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
     }
 }
 
-export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken) {
+export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Promise<LeagueLadGameData> {
     const rankColors = {
         'DIAMOND': 0xb9f2ff,
         'EMERALD': 0x50C878,
