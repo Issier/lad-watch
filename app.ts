@@ -32,7 +32,7 @@ async function sendGameInfoAlert(gameData: LeagueLadGameData[], channelID, discA
 
 async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
     let unsentPostGames = await db.collectionGroup('games').where('sentPostGame', '==', false).get();
-    unsentPostGames.forEach(async game => {
+    for(const game of unsentPostGames.docs) {
         let gameData = game.data();
         let summonerId = game.ref.parent.parent.id;
         let summInfo = await db.collection('summoner').where('summId', '==', summonerId).get();
@@ -57,7 +57,7 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
         } else {
             logger.info(`No Post Game for ${summonerId}`)
         }
-    });
+    }
 }
 
 export async function leagueLadCheck(riotAPI, discAPI, channelID) {
