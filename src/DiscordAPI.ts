@@ -6,7 +6,19 @@ import { Storage } from "@google-cloud/storage";
 import { logger } from '../logger.js';
 import { RiotAPITypes } from '@fightmegg/riot-api';
 
-export function getGameNotificationData(dataEntries) {
+type FormattedGameData = {
+    summonerName: string,
+    rankColor: number,
+    title: string,
+    champImagePath: string,
+    champImageFileName: string,
+    description: string,
+    thumbnail: string,
+    gameId: number,
+    fields: { name: string, value: string, inline?: boolean }[]
+}
+
+export function getGameNotificationData(dataEntries): FormattedGameData[] {
     let notificationData = dataEntries.map(gameData => {
         return {
             summonerName: gameData.summonerName,
@@ -149,9 +161,9 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
         for (let i = 0; i < sentRefs.length; i++) {
             sentRefs[i].set({
                 gameId: gameId,
-                champion: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.champion,
-                gameType: formattedGamesData.find(game => game.summonerName === summoners[i]).gameData.gameType,
-                messageId: formattedGamesData.messageId,
+                champion: dataEntries.find(game => game.summonerName === summoners[i]).champion,
+                gameType: dataEntries.find(game => game.summonerName === summoners[i]).gameType,
+                messageId: message.id,
                 sentPostGame: false
             })
         }
