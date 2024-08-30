@@ -147,31 +147,30 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
         });
 
         logger.info(`Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`)
-        const [rankData, liveGame] = await Promise.all([
-            riotAPI
-                .league
-                .getEntriesBySummonerId({
-                    region: PlatformId.NA1,
-                    summonerId: riotInfo.summId
-                }).catch(error => {
-                    logger.error(`Failed to fetch rank data: ${JSON.stringify(error)}}`)
-                    throw error;
-                }).then((data) => data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]),
-            riotAPI
-                .spectator
-                .getBySummonerId({
-                    region: PlatformId.NA1,
-                    summonerId: riotInfo.puuid
-                }).then(value => {
-                    logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
-                    return value;
-                }).catch(error => {
-                    logger.info(`Summoner ${riotInfo.gameName} is not in a game`);
-                    return null;
-                })
-        ]);
 
+        const liveGame = await riotAPI
+            .spectator
+            .getBySummonerId({
+                region: PlatformId.NA1,
+                summonerId: riotInfo.puuid
+            }).then(value => {
+                logger.info(`Fetched live game data for ${ladName}#${ladTag}, ${riotInfo.summId}, ${JSON.stringify(value)}`);
+                return value;
+            }).catch(() => {
+                logger.info(`Summoner ${riotInfo.gameName} is not in a game`);
+                return null;
+            })
         if (!liveGame) return;
+
+        const rankData = await riotAPI
+            .league
+            .getEntriesBySummonerId({
+                region: PlatformId.NA1,
+                summonerId: riotInfo.summId
+            }).catch(error => {
+                logger.error(`Failed to fetch rank data: ${JSON.stringify(error)}}`)
+                throw error;
+            }).then((data) => data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]);
 
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
