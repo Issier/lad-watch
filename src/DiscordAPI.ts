@@ -1,4 +1,4 @@
-import { API, Snowflake } from '@discordjs/core';
+import { API } from '@discordjs/core';
 import { REST } from '@discordjs/rest';
 import { bold } from '@discordjs/formatters';
 import { EmbedBuilder } from '@discordjs/builders';
@@ -47,13 +47,22 @@ export async function createThread(messageId, channelID, discordToken, gameType)
     const rest = new REST({ version: '10', timeout: 30_000 }).setToken(discordToken);
     const discordAPI = new API(rest);
 
-    return discordAPI.channels.createThread(channelID, {
-        name: `${gameType} Postgame`,
-        auto_archive_duration: 1440,
-    }, messageId).catch(() => {
-        logger.error(`Failed to create thread for ${messageId}`)
+    const message = await discordAPI.channels.getMessage(channelID, messageId);
+    if (!message) {
+        logger.error(`Game message ${messageId} doesn't exist`);
         return null;
-    }); 
+    }
+    if (!message.thread) {
+        return discordAPI.channels.createThread(channelID, {
+            name: `${gameType} Postgame`,
+            auto_archive_duration: 1440,
+        }, messageId).catch(() => {
+            logger.error(`Failed to create thread for ${messageId}`)
+            return null;
+        });
+    } else {
+        return message.thread;
+    }
 }
 
 export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, killImage: Promise<Buffer>, messageId, channelID, discordToken) {

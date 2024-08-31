@@ -75,11 +75,12 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
 
     const updatesByMessageId = []
     for (const messageId of Object.keys(unsentByMessageId)) {
-        await createThread(messageId, channelID, discAPI, unsentByMessageId[messageId][0].gameType);
-
-        updatesByMessageId.push(Promise.all(unsentByMessageId[messageId].map(gameRecord => {
-            return sendPostGameUpdateAlert(riotAPI, discAPI, channelID, gameRecord);
-        })));
+        const thread = await createThread(messageId, channelID, discAPI, unsentByMessageId[messageId][0].gameType);
+        
+        if (thread)
+            updatesByMessageId.push(Promise.all(unsentByMessageId[messageId].map(gameRecord => {
+                return sendPostGameUpdateAlert(riotAPI, discAPI, channelID, gameRecord);
+            })));
     }
     return await Promise.all(updatesByMessageId);
 }
