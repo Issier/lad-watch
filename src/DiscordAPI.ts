@@ -149,7 +149,7 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
                 .setThumbnail(formattedGamesData[i].thumbnail)
                 .setFields(...formattedGamesData[i].fields)
                 .setFooter({
-                    text: `Game ID: ${formattedGamesData[i].gameId} | W/L: ${formattedGamesData[i].winLossRatio?.toFixed(2) || 'Unknown'}%`
+                    text: `Game ID: ${formattedGamesData[i].gameId} | Season W/L: ${formattedGamesData[i].winLossRatio?.toFixed(2) || 'Unknown'}%`
                 }),
             summonerName: formattedGamesData[i].summonerName
         });
