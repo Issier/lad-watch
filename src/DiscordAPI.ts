@@ -5,6 +5,7 @@ import { EmbedBuilder } from '@discordjs/builders';
 import { Storage } from "@google-cloud/storage";
 import { logger } from '../logger.js';
 import { RiotAPITypes } from '@fightmegg/riot-api';
+import { LeagueLadGameData } from './LoLAPI.js';
 
 type FormattedGameData = {
     summonerName: string,
@@ -15,12 +16,18 @@ type FormattedGameData = {
     description: string,
     thumbnail: string,
     gameId: number,
-    fields: { name: string, value: string, inline?: boolean }[]
+    fields: { name: string, value: string, inline?: boolean }[],
+    seasonWins: number,
+    seasonLosses: number,
+    winLossRatio: number
 }
 
 export function getGameNotificationData(dataEntries): FormattedGameData[] {
-    let notificationData = dataEntries.map(gameData => {
+    let notificationData = dataEntries.map((gameData: LeagueLadGameData) => {
         return {
+            seasonWins: gameData.seasonWins,
+            seasonLosses: gameData.seasonLosses,
+            winLossRatio: gameData.seasonWins / gameData.seasonLosses,
             summonerName: gameData.summonerName,
             rankColor: gameData.rankColorHex,
             title: `LadWatch: ${gameData.summonerName}`,
@@ -140,7 +147,10 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
                 .setTitle(formattedGamesData[i].title)
                 .setDescription(formattedGamesData[i].description)
                 .setThumbnail(formattedGamesData[i].thumbnail)
-                .setFields(...formattedGamesData[i].fields),
+                .setFields(...formattedGamesData[i].fields)
+                .setFooter({
+                    text: `Game ID: ${formattedGamesData[i].gameId} | W/L: ${formattedGamesData[i].winLossRatio?.toFixed(2) || 'Unknown'}%`
+                }),
             summonerName: formattedGamesData[i].summonerName
         });
         summoners.push(formattedGamesData[i].summonerName);
