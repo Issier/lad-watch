@@ -43,6 +43,19 @@ export function getGameNotificationData(dataEntries): FormattedGameData[] {
     return notificationData
 }
 
+export async function createThread(messageId, channelID, discordToken, gameType) {
+    const rest = new REST({ version: '10', timeout: 30_000 }).setToken(discordToken);
+    const discordAPI = new API(rest);
+
+    return discordAPI.channels.createThread(channelID, {
+        name: `${gameType} Postgame`,
+        auto_archive_duration: 1440,
+    }, messageId).catch(() => {
+        logger.error(`Failed to create thread for ${messageId}`)
+        return null;
+    }); 
+}
+
 export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.MatchInfoDTO, postGameLadInfo: RiotAPITypes.MatchV5.ParticipantDTO, killImage: Promise<Buffer>, messageId, channelID, discordToken) {
     let gameDuration = `${Math.floor(postGameInfo.gameDuration / 60)}:${(postGameInfo.gameDuration % 60).toString().padStart(2, '0')}`;
     let gameVersion = postGameInfo.gameVersion.split('.').slice(0, 2).join('.');
@@ -91,23 +104,11 @@ export async function sendPostGameUpdate(postGameInfo: RiotAPITypes.MatchV5.Matc
             files: [map ? { contentType: 'image/png', data: map, name: 'kill.png' } : null].filter(Boolean)
         }).catch(error => {
             logger.info(`Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
+            return null;
         });
-
     } else {
-        return discordAPI.channels.createThread(channelID, {
-            name: `${postGameLadInfo?.win ? '🟩' : '🟥'} [${postGameInfo.gameMode}] ${postGameLadInfo?.summonerName} as ${postGameLadInfo?.championName}`,
-            auto_archive_duration: 1440,
-        }, messageId).then(async thread => {
-            const map: Buffer = await killImage;
-            return discordAPI.channels.createMessage(thread.id, {
-                embeds: [embed.toJSON()],
-                files: [killImage ? { contentType: 'image/png', data: map, name: 'kill.png' } : null].filter(Boolean)
-            }).catch(error => {
-                logger.error(`Failed to send discord message for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
-            });
-        }).catch(error => {
-            logger.error(`Failed to create thread for ${postGameLadInfo?.summonerName}, ${JSON.stringify(error)}`)
-        });
+        logger.error('Unable to find match thread')
+        return null;
     }
 }
 
