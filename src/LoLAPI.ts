@@ -53,10 +53,10 @@ function drawCircle(ctx: CanvasRenderingContext2D, color: string, x: number, y: 
     ctx.arc(scaledX + (scaledX < 256 ? 0 : 25), y * SCALER, 10, 0, 2 * Math.PI);
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fill(); 
+    ctx.fill();
 }
 
-async function paintMap(mapImage: any,framesWithPlayerEvent: { kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number }[]) {
+async function paintMap(mapImage: any, framesWithPlayerEvent: { kills: RiotAPITypes.MatchV5.EventDTO[], deaths: RiotAPITypes.MatchV5.EventDTO[], timestamp: number }[]) {
     const canvas: Canvas = createCanvas(512, 512);
     const ctx: CanvasRenderingContext2D = canvas.getContext('2d');
 
@@ -67,10 +67,10 @@ async function paintMap(mapImage: any,framesWithPlayerEvent: { kills: RiotAPITyp
 
         for (const event of framesWithPlayerEvent) {
             for (const kill of event.kills) {
-                drawCircle(ctx,'#00A36C',kill.position.x, kill.position.y)
+                drawCircle(ctx, '#00A36C', kill.position.x, kill.position.y)
             }
             for (const death of event.deaths) {
-                drawCircle(ctx,'#EE4B2B',death.position.x, death.position.y)
+                drawCircle(ctx, '#EE4B2B', death.position.x, death.position.y)
             }
         }
         return canvas.toBuffer();
@@ -89,7 +89,7 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
         const storage = new Storage();
         const [mapImage, timelineData] = await Promise.all([
             storage.bucket('league_data').file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png').download(),
-            riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId }) 
+            riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId })
         ]);
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
 
@@ -127,18 +127,17 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
         'IRON': 0x964B00
     }
 
-    const [gameTypes, champions] = await Promise.all([
-        downloadAsJson('league_data', 'queues.json'),
-        downloadAsJson('league_data', 'champion.json')
-    ]);
-
     try {
         const riotAPI = new RiotAPI(riotAPIToken);
         /* Riot games account info */
-        const riotInfo = await getRiotInfoWithCache(ladName, ladTag, riotAPIToken).catch(error => {
-            logger.error(`Failed to fetch riot info for ${ladName}#${ladTag}: ${JSON.stringify(error)}}`)
-            throw error;
-        });
+        const [riotInfo, gameTypes, champions] = await Promise.all([
+            getRiotInfoWithCache(ladName, ladTag, riotAPIToken).catch(error => {
+                logger.error(`Failed to fetch riot info for ${ladName}#${ladTag}: ${JSON.stringify(error)}}`)
+                throw error;
+            }),
+            downloadAsJson('league_data', 'queues.json'),
+            downloadAsJson('league_data', 'champion.json')
+        ])
 
         logger.info(`Summoner ${ladName} has info ${JSON.stringify(riotInfo)}`)
 

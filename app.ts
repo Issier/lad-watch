@@ -90,7 +90,7 @@ export async function leagueLadCheck(riotTokenPromise, discAPI, channelID) {
         downloadAsJson('league_data', 'lads.json'),
     ]);
 
-    let activeGames = (await Promise.all(lads.map(async lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotToken)))).filter(gameData => !!gameData);
+    let activeGames = (await Promise.all(lads.map(lad => fetchLeagueLadGameData(lad.gameName, lad.tagLine, riotToken)))).filter(gameData => !!gameData);
     logger.info(JSON.stringify(activeGames));
     const [discToken, channel] = await Promise.all([
         discAPI,
