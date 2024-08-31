@@ -5,6 +5,7 @@ import { DocumentData, DocumentReference, Firestore } from "@google-cloud/firest
 import express from 'express';
 import { logger } from './logger.js';
 import { downloadAsJson } from "./src/utilities.js";
+import { APIThreadChannel } from "@discordjs/core";
 
 type GameRecord = { ref: DocumentReference, champion: string, gameId: string, gameType: string, messageId: string, sentPostGame: boolean }
 
@@ -75,8 +76,8 @@ async function sendPostGameUpdateAlerts(riotAPI, discAPI, channelID) {
 
     const updatesByMessageId = []
     for (const messageId of Object.keys(unsentByMessageId)) {
-        const thread = await createThread(messageId, channelID, discAPI, unsentByMessageId[messageId][0].gameType);
-        
+        const thread: APIThreadChannel = await createThread(messageId, channelID, discAPI, unsentByMessageId[messageId][0].gameType) as APIThreadChannel;
+
         if (thread)
             updatesByMessageId.push(Promise.all(unsentByMessageId[messageId].map(gameRecord => {
                 return sendPostGameUpdateAlert(riotAPI, discAPI, channelID, gameRecord);
