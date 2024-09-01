@@ -27,7 +27,7 @@ export function getGameNotificationData(dataEntries): FormattedGameData[] {
         return {
             seasonWins: gameData.seasonWins,
             seasonLosses: gameData.seasonLosses,
-            winLossRatio: gameData.seasonWins / (gameData.seasonWins + gameData.seasonLosses),
+            winLossRatio: (gameData.seasonWins / (gameData.seasonWins + gameData.seasonLosses))*100,
             summonerName: gameData.summonerName,
             rankColor: gameData.rankColorHex,
             title: `LadWatch: ${gameData.summonerName}`,
@@ -150,7 +150,7 @@ export async function sendLeagueLadAlert(gameId, dataEntries, ladDocRefs, channe
                 .setThumbnail(formattedGamesData[i].thumbnail)
                 .setFields(...formattedGamesData[i].fields)
                 .setFooter({
-                    text: `Game ID: ${formattedGamesData[i].gameId} | Season W/L: ${formattedGamesData[i].winLossRatio?.toFixed(2) || 'Unknown'}%`
+                    text: `Game ID: ${formattedGamesData[i].gameId} | Season W/L: ${formattedGamesData[i].winLossRatio?.toFixed(0) || 'Unknown'}%`
                 }),
             summonerName: formattedGamesData[i].summonerName
         });
