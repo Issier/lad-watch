@@ -196,7 +196,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
             liveGamePages: `[u.gg](https://u.gg/lol/profile/na1/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/live-game)` +
                 `| [op.gg](https://www.op.gg/summoners/na/${encodeURIComponent(riotInfo.gameName)}-${ladTag}/ingame)`,
             gameType: gameType.description.replace(' games', ''),
-            rankColorHex: rankData.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
+            rankColorHex: rankData?.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
             gameId: liveGame.gameId,
             hotStreak: rankData.hotStreak,
             seasonWins: rankData.wins,
