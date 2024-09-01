@@ -22,6 +22,7 @@ async function sendGameInfoAlert(gameData: LeagueLadGameData[], channelID, discA
     let ladRefs: { [gameId: string]: { docRef: DocumentReference<DocumentData, DocumentData>, summonerName: string, gameData: LeagueLadGameData }[] } = {}
 
     gameData.forEach((game) => {
+        logger.info(`Game Data: ${JSON.stringify(gameData)}`)
         const ladDocRef = db.collection('lads').doc(game.summonerId).collection('games').doc('' + game.gameId)
         Object.keys(ladRefs).includes(game.gameId.toString()) ?
             ladRefs[game.gameId].push({ docRef: ladDocRef, summonerName: game.summonerName, gameData: game }) :
