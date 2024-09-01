@@ -198,9 +198,9 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
             gameType: gameType.description.replace(' games', ''),
             rankColorHex: rankData?.tier in rankColors ? rankColors[rankData.tier] : 0xFFFFFF,
             gameId: liveGame.gameId,
-            hotStreak: rankData.hotStreak,
-            seasonWins: rankData.wins,
-            seasonLosses: rankData.losses
+            hotStreak: rankData?.hotStreak,
+            seasonWins: rankData?.wins,
+            seasonLosses: rankData?.losses
         }
     } catch (error) {
         if (error?.response && error.response.status < 500) {
