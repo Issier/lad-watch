@@ -153,6 +153,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
                 logger.info(`Summoner ${riotInfo.gameName} is not in a game`);
                 return null;
             })
+        logger.info(`Live Game Inforomation: ${ladName}, ${JSON.stringify(liveGame)}`)
         if (!liveGame) return;
 
         const rankData = await riotAPI
@@ -168,6 +169,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
                     return data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]
                 return null;
             });
+        logger.info(`Rank Data: ${JSON.stringify(rankData)}`)
 
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
@@ -184,6 +186,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
 
         const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
 
+        logger.info("Recieved data, league lad data response")
         return {
             gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
             champion: champion,
