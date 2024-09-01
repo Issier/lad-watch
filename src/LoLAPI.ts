@@ -163,7 +163,11 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
             }).catch(error => {
                 logger.error(`Failed to fetch rank data: ${JSON.stringify(error)}}`)
                 throw error;
-            }).then((data) => data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]);
+            }).then((data) => {
+                if (data.find(data => data.queueType === 'RANKED_SOLO_5x5'))
+                    return data.filter(data => data.queueType === 'RANKED_SOLO_5x5')[0]
+                return null;
+            });
 
         const gameType = gameTypes.filter(val => val.queueId === liveGame.gameQueueConfigId)[0]
 
