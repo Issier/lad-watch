@@ -203,6 +203,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
         if (error?.response && error.response.status < 500) {
             logger.error(`Failed to fetch league lad data: ${JSON.stringify(error?.response?.data)}`)
         }
+        logger.error(`Failed to load: ${JSON.stringify(error)}`)
         return undefined;
     }
 }
