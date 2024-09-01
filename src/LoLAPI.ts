@@ -186,7 +186,7 @@ export async function fetchLeagueLadGameData(ladName, ladTag, riotAPIToken): Pro
 
         const gameTime = new Date(Date.now() - new Date(liveGame.gameStartTime).valueOf());
 
-        logger.info("Recieved data, league lad data response")
+        logger.info(`Creating lad response for ${ladName}${ladTag}`)
         return {
             gameTime: `${gameTime.getMinutes()}:${gameTime.getSeconds().toString().padStart(2, '0')}`,
             champion: champion,
