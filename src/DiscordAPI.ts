@@ -27,7 +27,7 @@ export function getGameNotificationData(dataEntries): FormattedGameData[] {
         return {
             seasonWins: gameData.seasonWins,
             seasonLosses: gameData.seasonLosses,
-            winLossRatio: (!gameData.seasonWins || !gameData.seasonLosses) ? 'Unknown' : (gameData.seasonWins / (gameData.seasonWins + gameData.seasonLosses))*100,
+            winLossRatio: (gameData.seasonWins / (gameData.seasonWins + gameData.seasonLosses))*100,
             summonerName: gameData.summonerName,
             rankColor: gameData.rankColorHex,
             title: `LadWatch: ${gameData.summonerName}`,
