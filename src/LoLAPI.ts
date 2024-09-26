@@ -78,7 +78,7 @@ async function paintMap(mapImage: any, framesWithPlayerEvent: { kills: RiotAPITy
 }
 
 async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIToken): Promise<Buffer> {
-    if (!['ARAM', 'CLASSIC'].includes(gameMode)) {
+    if (!['ARAM', 'CLASSIC', 'ULTBOOK'].includes(gameMode)) {
         logger.info(`Game mode ${gameMode} is not supported for kill image`)
         return null
     }
@@ -88,7 +88,7 @@ async function fetchKillImage(matchId: string, gameMode: string, puuid, riotAPIT
     try {
         const storage = new Storage();
         const [mapImage, timelineData] = await Promise.all([
-            storage.bucket('league_data').file(gameMode === 'CLASSIC' ? 'map.png' : 'map_aram.png').download(),
+            storage.bucket('league_data').file(['CLASSIC', 'ULTBOOK'].includes(gameMode) ? 'map.png' : 'map_aram.png').download(),
             riotAPI.matchV5.getMatchTimelineById({ cluster: PlatformId.AMERICAS, matchId: matchId })
         ]);
         const summonerParticipantId = timelineData.info.participants.find(participant => participant.puuid === puuid).participantId;
